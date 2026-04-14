@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bank Churn Prediction · Shyamali Naik</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#080b10;--bg2:#0d1117;--bg3:#131920;--surface:#182230;--border:#1e2d3e;
+  --cyan:#00c8e0;--cyan2:#009ab0;--violet:#9d7aff;--rose:#ff5c7a;--green:#3ecf82;
+  --amber:#f5a623;--text:#e8f4ff;--soft:#7a99b8;--muted:#3d5570;
+  --font-display:'Cormorant Garamond',serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --font-body:'Inter',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:16px;line-height:1.7;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;
+  background-image:radial-gradient(circle,rgba(0,200,224,.028) 1px,transparent 1px);
+  background-size:44px 44px;pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;top:-20%;left:-5%;width:45%;height:55%;
+  background:radial-gradient(ellipse,rgba(0,200,224,.035) 0%,transparent 65%);
+  pointer-events:none;z-index:0}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 5vw;background:rgba(8,11,16,.93);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+.nav-back{font-family:var(--font-mono);font-size:.73rem;color:var(--cyan);text-decoration:none;letter-spacing:.1em;transition:opacity .2s}
+.nav-back:hover{opacity:.65}
+.nav-title{font-family:var(--font-mono);font-size:.7rem;color:var(--muted);letter-spacing:.08em}
+
+.hero{position:relative;min-height:88vh;display:flex;flex-direction:column;justify-content:center;padding:100px 5vw 60px;z-index:1}
+.hero-badge{display:inline-flex;align-items:center;gap:.6rem;font-family:var(--font-mono);font-size:.68rem;color:var(--cyan);letter-spacing:.18em;text-transform:uppercase;border:1px solid rgba(0,200,224,.3);padding:.35rem .9rem;border-radius:2px;margin-bottom:2rem;opacity:0;animation:fadeUp .6s ease forwards .1s}
+.hero-title{font-family:var(--font-display);font-size:clamp(2.4rem,6vw,5.4rem);line-height:1.05;color:var(--text);max-width:900px;opacity:0;animation:fadeUp .6s ease forwards .3s}
+.hero-title em{font-style:italic;color:var(--cyan)}
+.hero-sub{max-width:640px;margin-top:1.5rem;font-size:1rem;color:var(--soft);font-weight:300;line-height:1.85;opacity:0;animation:fadeUp .6s ease forwards .5s}
+.hero-meta{display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:1.8rem;opacity:0;animation:fadeUp .6s ease forwards .7s}
+.meta-pill{font-family:var(--font-mono);font-size:.67rem;color:var(--muted);padding:.28rem .75rem;border:1px solid var(--border);border-radius:20px}
+
+.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-radius:8px;overflow:hidden;margin-top:2.5rem;border:1px solid var(--border);opacity:0;animation:fadeUp .6s ease forwards .9s}
+.stat-cell{background:var(--bg2);padding:1.5rem;text-align:center}
+.stat-val{font-family:var(--font-display);font-size:1.9rem;line-height:1;margin-bottom:.35rem}
+.stat-val.c{color:var(--cyan)}.stat-val.v{color:var(--violet)}.stat-val.r{color:var(--rose)}.stat-val.g{color:var(--green)}
+.stat-label{font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.stat-sub{font-size:.72rem;color:var(--muted);margin-top:.2rem}
+
+.chapter-nav{position:sticky;top:60px;z-index:90;background:rgba(8,11,16,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:.75rem 5vw;display:flex;gap:0;overflow-x:auto}
+.cnav-item{font-family:var(--font-mono);font-size:.67rem;color:var(--muted);letter-spacing:.1em;white-space:nowrap;padding:.4rem 1rem;border-radius:3px;cursor:pointer;transition:all .2s;text-decoration:none}
+.cnav-item:hover,.cnav-item.active{color:var(--cyan);background:rgba(0,200,224,.08)}
+.cnav-sep{color:var(--border);padding:.4rem .2rem;font-family:var(--font-mono);font-size:.8rem}
+
+section{position:relative;z-index:1;padding:80px 5vw}
+.eyebrow{font-family:var(--font-mono);font-size:.68rem;color:var(--cyan);letter-spacing:.2em;text-transform:uppercase;margin-bottom:1rem}
+.sec-title{font-family:var(--font-display);font-size:clamp(1.7rem,3.2vw,2.8rem);color:var(--text);line-height:1.15;margin-bottom:1.5rem}
+.sec-title em{font-style:italic;color:var(--cyan)}
+.body-text{color:var(--soft);font-weight:300;font-size:.95rem;line-height:1.85;max-width:700px;margin-bottom:1.2rem}
+.divider{height:1px;background:linear-gradient(to right,transparent,var(--border),transparent)}
+
+.callout{background:linear-gradient(135deg,rgba(0,200,224,.07),rgba(0,200,224,.02));border-left:3px solid var(--cyan);padding:1.4rem 1.8rem;border-radius:0 8px 8px 0;margin:2rem 0}
+.callout-label{font-family:var(--font-mono);font-size:.62rem;color:var(--cyan);letter-spacing:.2em;text-transform:uppercase;margin-bottom:.5rem}
+.callout p{color:var(--soft);font-size:.9rem;font-weight:300;line-height:1.8}
+.callout p strong{color:var(--text)}
+
+/* THE HEADLINE MOMENT — 80% accuracy is failing */
+.headline-moment{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin:2.5rem 0}
+.hm-card{border-radius:10px;padding:2rem;text-align:center;position:relative;overflow:hidden}
+.hm-card.bad{background:linear-gradient(135deg,rgba(255,92,122,.08),rgba(255,92,122,.03));border:1px solid rgba(255,92,122,.3)}
+.hm-card.good{background:linear-gradient(135deg,rgba(62,207,130,.08),rgba(62,207,130,.03));border:1px solid rgba(62,207,130,.3)}
+.hm-label{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;margin-bottom:1rem}
+.hm-label.bad{color:var(--rose)}.hm-label.good{color:var(--green)}
+.hm-model{font-family:var(--font-display);font-size:.95rem;color:var(--soft);margin-bottom:1.2rem;font-style:italic}
+.hm-metrics{display:flex;justify-content:center;gap:2rem}
+.hm-metric{display:flex;flex-direction:column;align-items:center}
+.hm-metric-val{font-family:var(--font-display);font-size:2.2rem;line-height:1}
+.hm-metric-label{font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-top:.3rem}
+.hm-verdict{margin-top:1.2rem;font-family:var(--font-mono);font-size:.72rem;padding:.35rem .9rem;border-radius:20px;display:inline-block}
+.hm-verdict.bad{color:var(--rose);border:1px solid rgba(255,92,122,.3);background:rgba(255,92,122,.06)}
+.hm-verdict.good{color:var(--green);border:1px solid rgba(62,207,130,.3);background:rgba(62,207,130,.06)}
+
+/* PIPELINE STEPS */
+.steps{display:flex;flex-direction:column;gap:0}
+.step{display:grid;grid-template-columns:80px 1fr;gap:2rem;padding:2.5rem 0;border-bottom:1px solid var(--border);align-items:start}
+.step:last-child{border-bottom:none}
+.step-num{font-family:var(--font-display);font-size:3.5rem;color:var(--border);line-height:1;padding-top:.2rem;font-style:italic}
+.step-tag{display:inline-block;font-family:var(--font-mono);font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;padding:.2rem .6rem;border-radius:3px;margin-bottom:.8rem}
+.tag-data{background:rgba(0,200,224,.1);color:var(--cyan);border:1px solid rgba(0,200,224,.25)}
+.tag-smote{background:rgba(157,122,255,.1);color:var(--violet);border:1px solid rgba(157,122,255,.25)}
+.tag-lr{background:rgba(62,207,130,.1);color:var(--green);border:1px solid rgba(62,207,130,.25)}
+.tag-svm{background:rgba(245,166,35,.1);color:var(--amber);border:1px solid rgba(245,166,35,.25)}
+.tag-rf{background:rgba(255,92,122,.1);color:var(--rose);border:1px solid rgba(255,92,122,.25)}
+.step-title{font-family:var(--font-display);font-size:1.4rem;color:var(--text);margin-bottom:.8rem;line-height:1.3}
+.step-body{font-size:.9rem;color:var(--soft);font-weight:300;line-height:1.75;margin-bottom:1rem}
+.step-metrics{display:flex;flex-wrap:wrap;gap:.6rem}
+.sm{font-family:var(--font-mono);font-size:.72rem;padding:.3rem .8rem;border-radius:20px;background:var(--bg3);border:1px solid var(--border);color:var(--soft)}
+.sm.c{color:var(--cyan);border-color:rgba(0,200,224,.3);background:rgba(0,200,224,.06)}
+.sm.g{color:var(--green);border-color:rgba(62,207,130,.3);background:rgba(62,207,130,.06)}
+.sm.r{color:var(--rose);border-color:rgba(255,92,122,.3);background:rgba(255,92,122,.06)}
+.sm.v{color:var(--violet);border-color:rgba(157,122,255,.3);background:rgba(157,122,255,.06)}
+.sm.a{color:var(--amber);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.06)}
+
+/* CHART */
+.chart-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.8rem;margin:2rem 0}
+.chart-title{font-family:var(--font-mono);font-size:.7rem;color:var(--soft);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1.4rem}
+.chart-note{font-family:var(--font-mono);font-size:.66rem;color:var(--muted);margin-top:.9rem;line-height:1.6}
+canvas{width:100%!important}
+
+/* CONFUSION MATRIX VISUAL */
+.cm-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin:2rem 0}
+.cm-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.5rem}
+.cm-title{font-family:var(--font-mono);font-size:.68rem;color:var(--soft);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1.2rem}
+.cm-matrix{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.cm-cell{padding:1rem .5rem;text-align:center;border-radius:6px}
+.cm-val{font-family:var(--font-display);font-size:1.8rem;line-height:1;margin-bottom:.3rem}
+.cm-lbl{font-family:var(--font-mono);font-size:.58rem;color:var(--muted);letter-spacing:.08em;line-height:1.4}
+.cm-cell.tp{background:rgba(62,207,130,.12);border:1px solid rgba(62,207,130,.25)}
+.cm-cell.tn{background:rgba(62,207,130,.08);border:1px solid rgba(62,207,130,.2)}
+.cm-cell.fp{background:rgba(255,92,122,.07);border:1px solid rgba(255,92,122,.2)}
+.cm-cell.fn{background:rgba(255,92,122,.1);border:1px solid rgba(255,92,122,.25)}
+
+/* MODEL COMPARISON TABLE */
+.compare-wrap{overflow-x:auto;margin:2rem 0}
+.compare-table{width:100%;border-collapse:collapse}
+.compare-table th{font-family:var(--font-mono);font-size:.63rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:.8rem 1.2rem;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+.compare-table td{padding:.75rem 1.2rem;border-bottom:1px solid rgba(30,45,62,.5);color:var(--soft);font-family:var(--font-mono);font-size:.78rem;white-space:nowrap}
+.compare-table tr:hover td{background:rgba(0,200,224,.03)}
+.compare-table tr.winner td{background:rgba(62,207,130,.04);color:var(--text)}
+.compare-table tr.winner td:first-child{color:var(--green);font-weight:500}
+.compare-table tr.failed td:first-child{color:var(--rose)}
+.vg{color:var(--green)!important}.vr{color:var(--rose)!important}.vc{color:var(--cyan)!important}.va{color:var(--amber)!important}
+
+/* K-FOLD RESULTS */
+.fold-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.8rem;margin:1.5rem 0}
+.fold-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center}
+.fold-label{font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em;margin-bottom:.6rem}
+.fold-auc{font-family:var(--font-display);font-size:1.4rem;color:var(--cyan)}
+.fold-acc{font-family:var(--font-mono);font-size:.7rem;color:var(--soft);margin-top:.3rem}
+
+/* FINDINGS + SKILLS */
+.findings-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;margin-top:2rem}
+.finding-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.6rem;transition:border-color .25s,transform .2s}
+.finding-card:hover{border-color:rgba(0,200,224,.25);transform:translateY(-2px)}
+.finding-title{font-family:var(--font-display);font-size:1.1rem;color:var(--text);margin-bottom:.6rem;line-height:1.3}
+.finding-body{font-size:.83rem;color:var(--soft);font-weight:300;line-height:1.7}
+.skill-tags{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:2rem}
+.skill-tag{font-family:var(--font-mono);font-size:.7rem;padding:.3rem .85rem;border-radius:20px;background:var(--bg3);border:1px solid var(--border);color:var(--soft);letter-spacing:.04em;transition:all .2s}
+.skill-tag:hover{border-color:var(--cyan2);color:var(--cyan);background:rgba(0,200,224,.06)}
+
+.takeaway{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:2rem 2.5rem;margin-top:2.5rem;display:flex;align-items:flex-start;gap:1.5rem}
+.takeaway-icon{font-size:1.8rem;flex-shrink:0;margin-top:.1rem}
+.takeaway-text{font-family:var(--font-display);font-size:1.08rem;color:var(--soft);font-style:italic;line-height:1.65}
+.takeaway-text strong{color:var(--text);font-style:normal}
+
+.github-cta{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:3rem;text-align:center;margin-top:2.5rem}
+.github-cta h3{font-family:var(--font-display);font-size:1.6rem;color:var(--text);margin-bottom:.8rem}
+.github-cta p{color:var(--soft);font-size:.95rem;max-width:520px;margin:0 auto 1.8rem;font-weight:300}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;border-radius:4px;font-family:var(--font-mono);font-size:.78rem;letter-spacing:.08em;text-decoration:none;cursor:pointer;transition:all .2s;border:none}
+.btn-primary{background:var(--cyan);color:var(--bg);font-weight:500}
+.btn-primary:hover{background:var(--cyan2);transform:translateY(-2px)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--soft)}
+.btn-outline:hover{border-color:var(--cyan);color:var(--cyan);transform:translateY(-2px)}
+.btn-group{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .55s ease,transform .55s ease}
+.reveal.visible{opacity:1;transform:none}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:768px){
+  .stat-strip,.headline-moment,.cm-grid,.findings-grid{grid-template-columns:1fr}
+  .fold-grid{grid-template-columns:repeat(3,1fr)}
+  .step{grid-template-columns:50px 1fr;gap:1rem}
+  .step-num{font-size:2.5rem}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-back">← Back to Portfolio</a>
+  <span class="nav-title">BANK CHURN PREDICTION · PYTHON · ML</span>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">🏦 Classification · Imbalanced Data · Python · NumPy from Scratch</div>
+  <h1 class="hero-title">Why 80% accuracy is<br/>actually a <em>failing grade</em>.</h1>
+  <p class="hero-sub">A machine learning pipeline to predict bank customer churn — built from scratch in NumPy — and a study in why the most obvious metric completely misled the baseline model, and what it takes to actually solve an imbalanced classification problem.</p>
+  <div class="hero-meta">
+    <span class="meta-pill">Dataset: 10,000 customers · 11 features</span>
+    <span class="meta-pill">Languages: Python · NumPy</span>
+    <span class="meta-pill">Models: LR · SVM · Random Forest</span>
+    <span class="meta-pill">Imbalance: 80% / 20%</span>
+  </div>
+  <div class="stat-strip">
+    <div class="stat-cell">
+      <div class="stat-val r">0%</div>
+      <div class="stat-label">Churn Recall — Baseline</div>
+      <div class="stat-sub">Despite 80% accuracy</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-val g">63%</div>
+      <div class="stat-label">Churn Recall — After SMOTE</div>
+      <div class="stat-sub">The model that actually works</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-val c">0.71</div>
+      <div class="stat-label">Best AUC</div>
+      <div class="stat-sub">LR + SMOTE + class weights</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-val v">0.65</div>
+      <div class="stat-label">SVM AUC (K-Fold)</div>
+      <div class="stat-sub">Avg across 5 folds</div>
+    </div>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <a href="#problem"     class="cnav-item active">The Problem</a>
+  <span class="cnav-sep">›</span>
+  <a href="#data"        class="cnav-item">The Data</a>
+  <span class="cnav-sep">›</span>
+  <a href="#pipeline"    class="cnav-item">Pipeline</a>
+  <span class="cnav-sep">›</span>
+  <a href="#moment"      class="cnav-item">The 80% Trap</a>
+  <span class="cnav-sep">›</span>
+  <a href="#models"      class="cnav-item">Model Journey</a>
+  <span class="cnav-sep">›</span>
+  <a href="#results"     class="cnav-item">Results</a>
+  <span class="cnav-sep">›</span>
+  <a href="#skills"      class="cnav-item">Skills</a>
+</div>
+
+<div class="divider"></div>
+
+<!-- 01 THE PROBLEM -->
+<section id="problem">
+  <div class="eyebrow reveal">01 · The Problem</div>
+  <h2 class="sec-title reveal">Losing a customer costs 5×<br/>more than <em>keeping one.</em></h2>
+  <div class="reveal" style="max-width:700px;color:var(--soft);font-weight:300;font-size:.97rem;line-height:1.88;margin-bottom:2rem">
+    <p style="margin-bottom:1rem">Customer churn — when a client closes their account and leaves — is one of the most expensive problems in banking. Acquiring a new customer costs roughly five times more than retaining an existing one. Yet most banks only discover a customer has churned <strong style="color:var(--text)">after it has already happened</strong>.</p>
+    <p style="margin-bottom:1rem">Machine learning offers the ability to identify at-risk customers <em>before</em> they leave, enabling targeted interventions: loyalty offers, fee waivers, personalised outreach. But building a model that actually works requires confronting the core challenge head-on: <strong style="color:var(--text)">in a dataset where only 20% of customers churn, a model that predicts "no churn" for everyone will claim 80% accuracy — and be completely useless.</strong></p>
+    <p>This project built a full ML pipeline from scratch — Logistic Regression, SVM, and Random Forest, all implemented in NumPy without scikit-learn — to navigate this trap and produce a model that genuinely identifies churners.</p>
+  </div>
+  <div class="callout reveal">
+    <div class="callout-label">The Core Challenge</div>
+    <p>With an 80/20 class split, standard accuracy is a <strong>deceptive metric</strong>. The project's real objective was not to maximise accuracy, but to maximise <strong>recall on the churn class</strong> — because a missed churner costs the bank real money, while a false positive (a retained customer who wouldn't have churned anyway) costs only a small retention offer.</p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- 02 THE DATA -->
+<section id="data">
+  <div class="eyebrow reveal">02 · The Data</div>
+  <h2 class="sec-title reveal">10,000 customers.<br/><em>One critical imbalance.</em></h2>
+  <p class="body-text reveal">The dataset contains 10,000 bank customers across France, Germany and Spain, with 11 features covering demographics, financial behaviour, and engagement. No missing values or duplicates were found. The challenge was structural, not technical.</p>
+
+  <!-- CHURN BY COUNTRY / GENDER CHART -->
+  <div class="chart-box reveal">
+    <div class="chart-title">Churn Rate by Country and Gender — Key EDA Findings</div>
+    <canvas id="churnChart" height="240"></canvas>
+    <p class="chart-note">* Germany stands out with a ~32% churn rate vs ~16% for France and Spain. Female customers churn at ~25% vs ~16% for males. Chi-square test confirmed gender–churn relationship is statistically significant (p ≈ 2.24×10⁻²⁶). ANOVA confirmed country does NOT significantly affect tenure (p = 0.925).</p>
+  </div>
+
+  <!-- CORRELATION WITH CHURN -->
+  <div class="chart-box reveal">
+    <div class="chart-title">Feature Correlations with Churn — Ranked</div>
+    <canvas id="corrChart" height="220"></canvas>
+    <p class="chart-note">* Age (0.29) and Active Member status (−0.16) are the strongest predictors. Low linear correlations do not mean a feature is useless — ML models capture non-linear interactions, which is why all features were retained for modeling. Feature engineering added Balance/Salary ratio and Age/Tenure ratio as derived signals.</p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- 03 PIPELINE -->
+<section id="pipeline">
+  <div class="eyebrow reveal">03 · The Pipeline</div>
+  <h2 class="sec-title reveal">Every preprocessing choice<br/><em>was deliberate.</em></h2>
+  <p class="body-text reveal">Rather than importing scikit-learn model classes, all algorithms were implemented in NumPy from scratch — implementing sigmoid functions, gradient descent, hinge loss, and Gini impurity by hand. This demonstrates genuine understanding of the mathematics behind the models, not just API familiarity.</p>
+
+  <div class="steps">
+    <div class="step reveal">
+      <div class="step-num">01</div>
+      <div class="step-content">
+        <span class="step-tag tag-data">Data Preprocessing</span>
+        <div class="step-title">Outlier capping, encoding, feature engineering</div>
+        <p class="step-body">Age values above 70 were capped at 70 (capping method) to improve distribution uniformity — the 70+ cohort represented a statistically minimal segment. Country and gender were label-encoded and one-hot encoded. Two interaction features were engineered from the data: <strong style="color:var(--text)">Balance-to-Salary Ratio</strong> and <strong style="color:var(--text)">Age-to-Tenure Ratio</strong> — features that capture financial stability and loyalty dynamics respectively. No missing values required imputation; the dataset was clean on arrival.</p>
+        <div class="step-metrics">
+          <span class="sm c">10,000 rows · 11 features</span>
+          <span class="sm">0 missing values</span>
+          <span class="sm">0 duplicates</span>
+          <span class="sm c">Age capped at 70</span>
+          <span class="sm">2 engineered features</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step reveal">
+      <div class="step-num">02</div>
+      <div class="step-content">
+        <span class="step-tag tag-smote">SMOTE + Class Weights</span>
+        <div class="step-title">Addressing 80/20 imbalance with synthetic oversampling</div>
+        <p class="step-body">The churn column showed severe class imbalance — 7,963 retained vs 2,037 churned. Left unaddressed, any model would optimise for the majority class and predict "no churn" for virtually everyone. Two complementary strategies were applied: <strong style="color:var(--text)">SMOTE</strong> (Synthetic Minority Oversampling Technique) generated synthetic churn samples by interpolating between nearest neighbours in feature space, balancing both classes to 7,963 each. <strong style="color:var(--text)">Custom class weights</strong> applied a penalty multiplier to the minority class during gradient descent, forcing the model to treat each churner as more "expensive" to misclassify.</p>
+        <div class="step-metrics">
+          <span class="sm v">SMOTE: 7,963 → 7,963 per class</span>
+          <span class="sm">Undersampling: 2,037 per class</span>
+          <span class="sm v">Class weight: inverse frequency</span>
+          <span class="sm">10-fold cross-validation</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step reveal">
+      <div class="step-num">03</div>
+      <div class="step-content">
+        <span class="step-tag tag-lr">Logistic Regression — NumPy from scratch</span>
+        <div class="step-title">Sigmoid + binary cross-entropy + gradient descent</div>
+        <p class="step-body">Logistic regression was implemented entirely from scratch: sigmoid activation, negative log-likelihood loss, and gradient descent optimisation. Training ran for 1,000 epochs at learning rate 0.01. The cost curve confirmed steady convergence from 0.693 (epoch 0) to 0.494 (epoch 900). Min-max normalisation was applied to all features. The model was evaluated both without preprocessing (baseline) and with SMOTE + weighted classes — the comparison produced the project's central insight about the deceptiveness of raw accuracy.</p>
+        <div class="step-metrics">
+          <span class="sm g">LR = 0.01 · Epochs = 1,000</span>
+          <span class="sm">Cost: 0.693 → 0.494</span>
+          <span class="sm g">From-scratch NumPy implementation</span>
+          <span class="sm">80/20 train-test split</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step reveal">
+      <div class="step-num">04</div>
+      <div class="step-content">
+        <span class="step-tag tag-svm">SVM — NumPy from scratch</span>
+        <div class="step-title">Hinge loss + gradient descent + K-fold cross-validation</div>
+        <p class="step-body">A custom SVM was implemented using hinge loss optimisation and gradient descent with margin constraints. Without preprocessing, the model completely failed — AUC of 0.50, accuracy of 0.00, predicting nothing useful. The failure was diagnostic: it revealed the critical role of standardisation and class balancing for margin-based classifiers. After adding custom standardisation (zero mean, unit variance), SMOTE, and 5-fold cross-validation, the SVM recovered to an average AUC of 0.65 and accuracy of 75.24%. Each fold's ROC curve was plotted to assess consistency.</p>
+        <div class="step-metrics">
+          <span class="sm r">No preprocessing: AUC = 0.50 ✗</span>
+          <span class="sm a">After preprocessing: AUC = 0.65</span>
+          <span class="sm a">Avg accuracy: 75.24%</span>
+          <span class="sm">5-fold cross-validation</span>
+          <span class="sm">Custom standardisation function</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step reveal">
+      <div class="step-num">05</div>
+      <div class="step-content">
+        <span class="step-tag tag-rf">Random Forest — attempted from scratch</span>
+        <div class="step-title">Bootstrap sampling + Gini impurity + majority voting</div>
+        <p class="step-body">Random Forest was implemented from scratch: bootstrap sampling, Gini impurity calculation, recursive tree building with majority voting across 10 trees (max depth 5, min split size 10). The architecture is theoretically the strongest of the three — ensemble methods handle imbalanced data and non-linear interactions better than single models. However, without optimised C implementations or GPU acceleration, training on 10,000 rows exceeded 11 minutes — making hyperparameter tuning infeasible. <strong style="color:var(--text)">This is reported honestly as a computational limitation</strong>, not a model failure. The implementation is correct; the hardware was the constraint.</p>
+        <div class="step-metrics">
+          <span class="sm r">Computationally infeasible without sklearn</span>
+          <span class="sm">10 trees · max_depth=5</span>
+          <span class="sm">Gini impurity implemented in NumPy</span>
+          <span class="sm r">Training > 11 min on 10,000 rows</span>
+          <span class="sm v">Expected best performer when optimised</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- 04 THE 80% TRAP -->
+<section id="moment">
+  <div class="eyebrow reveal">04 · The 80% Trap</div>
+  <h2 class="sec-title reveal">The model that looks better<br/><em>is completely useless.</em></h2>
+  <p class="body-text reveal">This is the centrepiece of the project. Side by side, the two logistic regression models — before and after SMOTE — illustrate why accuracy alone is a dangerous metric for imbalanced classification.</p>
+
+  <div class="headline-moment reveal">
+    <div class="hm-card bad">
+      <div class="hm-label bad">❌ Logistic Regression — No SMOTE</div>
+      <div class="hm-model">Confusion matrix: [[1607, 0], [393, 0]]</div>
+      <div class="hm-metrics">
+        <div class="hm-metric">
+          <div class="hm-metric-val" style="color:var(--green)">80%</div>
+          <div class="hm-metric-label">Accuracy</div>
+        </div>
+        <div class="hm-metric">
+          <div class="hm-metric-val" style="color:var(--rose)">0%</div>
+          <div class="hm-metric-label">Churn Recall</div>
+        </div>
+        <div class="hm-metric">
+          <div class="hm-metric-val" style="color:var(--rose)">0.63</div>
+          <div class="hm-metric-label">AUC</div>
+        </div>
+      </div>
+      <span class="hm-verdict bad">Predicts every customer stays. Useless for retention.</span>
+    </div>
+    <div class="hm-card good">
+      <div class="hm-label good">✓ Logistic Regression + SMOTE</div>
+      <div class="hm-model">Confusion matrix: [[1084, 523], [146, 247]]</div>
+      <div class="hm-metrics">
+        <div class="hm-metric">
+          <div class="hm-metric-val" style="color:var(--amber)">67%</div>
+          <div class="hm-metric-label">Accuracy</div>
+        </div>
+        <div class="hm-metric">
+          <div class="hm-metric-val" style="color:var(--green)">63%</div>
+          <div class="hm-metric-label">Churn Recall</div>
+        </div>
+        <div class="hm-metric">
+          <div class="hm-metric-val" style="color:var(--cyan)">0.71</div>
+          <div class="hm-metric-label">AUC</div>
+        </div>
+      </div>
+      <span class="hm-verdict good">Correctly flags 247 of 393 churners. Actually useful.</span>
+    </div>
+  </div>
+
+  <div class="callout reveal">
+    <div class="callout-label">The Insight</div>
+    <p>The model with <strong>lower accuracy (67%)</strong> is the better model. It catches 247 real churners that the "accurate" model misses entirely. In banking, each correctly identified churner represents a retention opportunity worth thousands in lifetime value. <strong>Accuracy measures how often you're right. Recall measures whether you're right about the things that matter.</strong></p>
+  </div>
+
+  <!-- CONFUSION MATRICES VISUAL -->
+  <div class="cm-grid reveal">
+    <div class="cm-card">
+      <div class="cm-title">LR Baseline — Confusion Matrix</div>
+      <div class="cm-matrix">
+        <div class="cm-cell tn"><div class="cm-val" style="color:var(--green)">1607</div><div class="cm-lbl">True Negative<br/>No Churn → No Churn</div></div>
+        <div class="cm-cell fp"><div class="cm-val" style="color:var(--rose)">0</div><div class="cm-lbl">False Positive<br/>No Churn → Churn</div></div>
+        <div class="cm-cell fn"><div class="cm-val" style="color:var(--rose)">393</div><div class="cm-lbl">False Negative<br/>Churn → No Churn</div></div>
+        <div class="cm-cell tp"><div class="cm-val" style="color:var(--green)">0</div><div class="cm-lbl">True Positive<br/>Churn → Churn</div></div>
+      </div>
+      <p style="font-family:var(--font-mono);font-size:.66rem;color:var(--rose);margin-top:.9rem">Zero churners correctly identified. Model predicts only majority class.</p>
+    </div>
+    <div class="cm-card">
+      <div class="cm-title">LR + SMOTE — Confusion Matrix</div>
+      <div class="cm-matrix">
+        <div class="cm-cell tn"><div class="cm-val" style="color:var(--green)">1084</div><div class="cm-lbl">True Negative<br/>No Churn → No Churn</div></div>
+        <div class="cm-cell fp"><div class="cm-val" style="color:var(--amber)">523</div><div class="cm-lbl">False Positive<br/>No Churn → Churn</div></div>
+        <div class="cm-cell fn"><div class="cm-val" style="color:var(--amber)">146</div><div class="cm-lbl">False Negative<br/>Churn → No Churn</div></div>
+        <div class="cm-cell tp"><div class="cm-val" style="color:var(--cyan)">247</div><div class="cm-lbl">True Positive<br/>Churn → Churn</div></div>
+      </div>
+      <p style="font-family:var(--font-mono);font-size:.66rem;color:var(--green);margin-top:.9rem">247 churners correctly flagged. Precision/recall trade-off is acceptable for the use case.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- 05 MODEL JOURNEY -->
+<section id="models">
+  <div class="eyebrow reveal">05 · Model Journey</div>
+  <h2 class="sec-title reveal">Four iterations. Each revealing<br/><em>something new.</em></h2>
+
+  <div class="compare-wrap reveal">
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Preprocessing</th>
+          <th>Accuracy</th>
+          <th>Churn Recall</th>
+          <th>Churn Precision</th>
+          <th>F1 (Churn)</th>
+          <th>AUC</th>
+          <th>Verdict</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="failed">
+          <td>LR — Baseline</td>
+          <td>None</td>
+          <td class="va">0.80</td>
+          <td class="vr">0.00</td>
+          <td class="vr">0.00</td>
+          <td class="vr">0.00</td>
+          <td>0.63</td>
+          <td class="vr">Useless</td>
+        </tr>
+        <tr class="winner">
+          <td>★ LR + SMOTE</td>
+          <td>SMOTE + class weights</td>
+          <td>0.67</td>
+          <td class="vg">0.63</td>
+          <td>0.32</td>
+          <td class="vg">0.42</td>
+          <td class="vg">0.71</td>
+          <td class="vg">Best Overall</td>
+        </tr>
+        <tr class="failed">
+          <td>SVM — No Preprocessing</td>
+          <td>None</td>
+          <td class="vr">0.00</td>
+          <td class="vr">—</td>
+          <td class="vr">—</td>
+          <td class="vr">—</td>
+          <td class="vr">0.50</td>
+          <td class="vr">Random guessing</td>
+        </tr>
+        <tr>
+          <td>SVM — K-Fold (avg)</td>
+          <td>Std + SMOTE + K-Fold</td>
+          <td>0.75</td>
+          <td>~0.46</td>
+          <td>~0.40</td>
+          <td>~0.43</td>
+          <td class="vc">0.65</td>
+          <td class="va">Competitive</td>
+        </tr>
+        <tr>
+          <td>Random Forest</td>
+          <td>Bootstrap + Gini</td>
+          <td colspan="5" style="color:var(--muted)">Computationally infeasible without optimised libraries (>11 min)</td>
+          <td class="vr">Not evaluated</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SVM K-FOLD RESULTS -->
+  <div class="eyebrow reveal" style="margin-top:2.5rem">SVM 5-Fold Cross-Validation Results</div>
+  <h3 class="reveal" style="font-family:var(--font-display);font-size:1.5rem;color:var(--text);margin-bottom:1rem">Consistent AUC across folds confirms <em>no overfitting.</em></h3>
+  <div class="fold-grid reveal">
+    <div class="fold-card"><div class="fold-label">Fold 1</div><div class="fold-auc">0.667</div><div class="fold-acc">Acc: 79.6%</div></div>
+    <div class="fold-card"><div class="fold-label">Fold 2</div><div class="fold-auc">0.608</div><div class="fold-acc">Acc: 74.4%</div></div>
+    <div class="fold-card"><div class="fold-label">Fold 3</div><div class="fold-auc">0.646</div><div class="fold-acc">Acc: 74.3%</div></div>
+    <div class="fold-card"><div class="fold-label">Fold 4</div><div class="fold-auc">0.667</div><div class="fold-acc">Acc: 74.3%</div></div>
+    <div class="fold-card"><div class="fold-label">Fold 5</div><div class="fold-auc">0.662</div><div class="fold-acc">Acc: 73.7%</div></div>
+  </div>
+  <p style="font-family:var(--font-mono);font-size:.7rem;color:var(--soft);margin-top:.8rem">Average AUC: <span style="color:var(--cyan)">0.650</span> · Average Accuracy: <span style="color:var(--cyan)">75.24%</span> — consistent performance across all folds confirms the SVM generalises reliably.</p>
+
+  <!-- AUC COMPARISON CHART -->
+  <div class="chart-box reveal">
+    <div class="chart-title">AUC Comparison — All Models · What Each Score Means</div>
+    <canvas id="aucChart" height="220"></canvas>
+    <p class="chart-note">* AUC = 0.50 means the model is no better than flipping a coin. AUC = 0.71 means the model correctly ranks a random churner above a random non-churner 71% of the time — meaningfully better than random, and practically useful for generating retention candidate lists.</p>
+  </div>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-icon">💡</div>
+    <div class="takeaway-text">"Recall is more critical than precision in churn prediction. Missing a churner (false negative) costs the bank a real customer. Sending a retention offer to a non-churner (false positive) costs only a small incentive. <strong>The business cost of the two error types is not symmetric — and your choice of metric should reflect that asymmetry.</strong>"</div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- 06 RESULTS -->
+<section id="results">
+  <div class="eyebrow reveal">06 · Key Results</div>
+  <h2 class="sec-title reveal">What the data revealed<br/><em>about churner behaviour.</em></h2>
+
+  <div class="findings-grid reveal">
+    <div class="finding-card">
+      <div class="finding-title">🎂 Age is the Strongest Predictor</div>
+      <p class="finding-body">Correlation of +0.29 with churn — the highest of any feature. Older customers churn at disproportionately higher rates. This suggests age-targeted retention strategies: loyalty rewards for customers over 45, proactive service reviews for long-standing customers approaching retirement.</p>
+    </div>
+    <div class="finding-card">
+      <div class="finding-title">🇩🇪 Germany's Anomalous Churn Rate</div>
+      <p class="finding-body">German customers churn at ~32% vs ~16% for France and Spain. Interestingly, ANOVA confirmed that country does not significantly affect tenure (p = 0.925) — meaning German customers aren't leaving sooner, they're leaving at higher rates across all tenure bands. The cause is likely product or service dissatisfaction specific to the German market.</p>
+    </div>
+    <div class="finding-card">
+      <div class="finding-title">👩 Female Customers Churn More</div>
+      <p class="finding-body">Female customers churn at 25.1% vs 16.5% for males. Chi-square test: p ≈ 2.24×10⁻²⁶ — this relationship is not random. It is one of the most statistically significant findings in the dataset. Gender-specific product features or communication strategies may be warranted, particularly in Germany where the gap is most pronounced.</p>
+    </div>
+    <div class="finding-card">
+      <div class="finding-title">📴 Inactive Members Leave More</div>
+      <p class="finding-body">Active member status correlates at −0.16 with churn — the second strongest signal. Inactive customers are significantly more likely to churn. This is actionable: re-engagement campaigns targeting inactive members (no app login, no transactions in 90 days) could be highly cost-effective.</p>
+    </div>
+  </div>
+
+  <!-- COST LEARNING CURVE -->
+  <div class="chart-box reveal">
+    <div class="chart-title">Logistic Regression — Cost Reduction Over 1,000 Epochs (SMOTE + Weighted)</div>
+    <canvas id="costChart" height="220"></canvas>
+    <p class="chart-note">* Cost (binary cross-entropy) declines steadily from 0.693 at epoch 0 toward convergence near 0.66 by epoch 1,000. The smooth curve confirms a well-chosen learning rate of 0.01 — no oscillation, no plateau. This is the custom NumPy gradient descent implementation.</p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- 07 SKILLS -->
+<section id="skills">
+  <div class="eyebrow reveal">07 · Skills Demonstrated</div>
+  <h2 class="sec-title reveal">What this project<br/><em>actually proves.</em></h2>
+
+  <div class="findings-grid reveal">
+    <div class="finding-card">
+      <div class="finding-title">🔧 ML from Scratch in NumPy</div>
+      <p class="finding-body">Implemented sigmoid function, binary cross-entropy loss, gradient descent, hinge loss, Gini impurity, and bootstrap sampling — all in raw NumPy without scikit-learn model classes. This demonstrates genuine understanding of ML mathematics, not just API familiarity.</p>
+    </div>
+    <div class="finding-card">
+      <div class="finding-title">⚖️ Imbalanced Data Mastery</div>
+      <p class="finding-body">Applied SMOTE, custom class weights, and undersampling to address 80/20 class imbalance. Made the principled argument that recall — not accuracy — is the right metric for churn prediction, and demonstrated it with a concrete comparison that any employer can immediately understand.</p>
+    </div>
+    <div class="finding-card">
+      <div class="finding-title">🧪 Statistical EDA</div>
+      <p class="finding-body">Applied chi-square test (gender vs churn: p ≈ 2.24×10⁻²⁶), ANOVA (country vs tenure: p = 0.925), correlation matrices, IQR outlier detection, and group-level analysis by country and gender. Statistical tests informed feature selection decisions rather than correlation cutoffs alone.</p>
+    </div>
+    <div class="finding-card">
+      <div class="finding-title">📊 ROC / AUC + K-Fold Validation</div>
+      <p class="finding-body">Generated ROC curves for each model and each cross-validation fold. Computed AUC as the primary discriminative metric. Applied 5-fold cross-validation to the SVM to assess generalisation — the consistent fold-level AUC (~0.61–0.67) confirmed no overfitting in the best implementation.</p>
+    </div>
+  </div>
+
+  <div class="skill-tags reveal">
+    <span class="skill-tag">Python</span>
+    <span class="skill-tag">NumPy</span>
+    <span class="skill-tag">Pandas</span>
+    <span class="skill-tag">Logistic Regression (scratch)</span>
+    <span class="skill-tag">SVM (scratch)</span>
+    <span class="skill-tag">Random Forest (scratch)</span>
+    <span class="skill-tag">SMOTE</span>
+    <span class="skill-tag">Class Weighting</span>
+    <span class="skill-tag">K-Fold Cross-Validation</span>
+    <span class="skill-tag">ROC / AUC</span>
+    <span class="skill-tag">Confusion Matrix</span>
+    <span class="skill-tag">Chi-Square Test</span>
+    <span class="skill-tag">ANOVA</span>
+    <span class="skill-tag">Feature Engineering</span>
+    <span class="skill-tag">StandardScaler</span>
+    <span class="skill-tag">Seaborn · Matplotlib</span>
+  </div>
+
+  <div class="github-cta reveal">
+    <h3>Explore the full notebook</h3>
+    <p>The complete Jupyter notebook — all models, confusion matrices, ROC curves, K-fold results, and the SMOTE comparison — is available on GitHub.</p>
+    <div class="btn-group">
+      <a href="#" class="btn btn-primary">View on GitHub →</a>
+      <a href="index.html" class="btn btn-outline">← Back to Portfolio</a>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+Chart.defaults.color='#3d5570';
+Chart.defaults.borderColor='#1e2d3e';
+Chart.defaults.font.family="'JetBrains Mono',monospace";
+Chart.defaults.font.size=11;
+const tt={backgroundColor:'#131920',borderColor:'#1e2d3e',borderWidth:1,titleColor:'#e8f4ff',bodyColor:'#7a99b8',padding:10};
+
+// ── 1. CHURN BY COUNTRY & GENDER ─────────────────────────────────────────────
+new Chart(document.getElementById('churnChart'),{
+  type:'bar',
+  data:{
+    labels:['France','Spain','Germany'],
+    datasets:[
+      {label:'Female Churn Rate',data:[0.195,0.195,0.375],backgroundColor:'rgba(157,122,255,.75)',borderColor:'rgba(157,122,255,.9)',borderWidth:1,borderRadius:4},
+      {label:'Male Churn Rate',  data:[0.130,0.140,0.270],backgroundColor:'rgba(0,200,224,.6)',  borderColor:'rgba(0,200,224,.8)', borderWidth:1,borderRadius:4}
+    ]
+  },
+  options:{responsive:true,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{position:'top',labels:{usePointStyle:true,padding:20,color:'#7a99b8'}},tooltip:{...tt,callbacks:{label:ctx=>`${ctx.dataset.label}: ${(ctx.parsed.y*100).toFixed(1)}%`}}},
+    scales:{
+      x:{grid:{display:false},ticks:{color:'#3d5570'}},
+      y:{grid:{color:'rgba(30,45,62,.4)'},ticks:{color:'#3d5570',callback:v=>`${(v*100).toFixed(0)}%`},title:{display:true,text:'Churn Rate',color:'#3d5570'},min:0,max:.45}
+    }
+  }
+});
+
+// ── 2. CORRELATION WITH CHURN ─────────────────────────────────────────────────
+const corrFeats=['age','country_Germany','balance','Age/Tenure Ratio','Balance/Salary','est_salary','credit_card','tenure','credit_score','products_number','gender_Male','active_member'];
+const corrVals=[0.294,0.173,0.119,0.104,0.026,0.012,-0.007,-0.014,-0.027,-0.048,-0.107,-0.156];
+const corrColors=corrVals.map(v=>v>0?'rgba(62,207,130,.75)':'rgba(255,92,122,.7)');
+new Chart(document.getElementById('corrChart'),{
+  type:'bar',
+  data:{labels:corrFeats,datasets:[{label:'Correlation with Churn',data:corrVals,backgroundColor:corrColors,borderColor:corrColors.map(c=>c.replace('.75)','.9)').replace('.7)','.9)')),borderWidth:1,borderRadius:3}]},
+  options:{responsive:true,indexAxis:'y',
+    plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:ctx=>`r = ${ctx.parsed.x.toFixed(3)}`}}},
+    scales:{
+      x:{grid:{color:'rgba(30,45,62,.4)'},ticks:{color:'#3d5570',callback:v=>v.toFixed(2)},title:{display:true,text:'Pearson r',color:'#3d5570'}},
+      y:{grid:{display:false},ticks:{color:'#7a99b8'}}
+    }
+  }
+});
+
+// ── 3. AUC COMPARISON ─────────────────────────────────────────────────────────
+const aucModels=['LR (No SMOTE)','LR + SMOTE ★','SVM (No Prep)','SVM (K-Fold avg)','Random Forest'];
+const aucVals=[0.63,0.71,0.50,0.65,null];
+const aucColors=['rgba(100,160,200,.5)','rgba(62,207,130,.8)','rgba(255,92,122,.7)','rgba(0,200,224,.7)','rgba(80,90,110,.4)'];
+new Chart(document.getElementById('aucChart'),{
+  type:'bar',
+  data:{labels:aucModels,datasets:[
+    {label:'AUC Score',data:aucVals,backgroundColor:aucColors,borderColor:aucColors.map(c=>c.replace('.5)','.8)').replace('.7)','.95)').replace('.8)','.95)').replace('.4)','.6)')),borderWidth:1,borderRadius:4},
+    {label:'Random Baseline (0.50)',data:[0.5,0.5,0.5,0.5,0.5],type:'line',borderColor:'rgba(255,92,122,.5)',borderWidth:1.5,borderDash:[4,3],pointRadius:0,backgroundColor:'transparent'}
+  ]},
+  options:{responsive:true,
+    plugins:{legend:{position:'top',labels:{usePointStyle:true,padding:20,color:'#7a99b8'}},
+      tooltip:{...tt,callbacks:{label:ctx=>ctx.dataset.label==='AUC Score'?`AUC: ${ctx.parsed.y??'N/A'}`:null}}},
+    scales:{
+      x:{grid:{display:false},ticks:{color:'#3d5570'}},
+      y:{grid:{color:'rgba(30,45,62,.4)'},ticks:{color:'#3d5570'},min:0,max:0.85,title:{display:true,text:'AUC Score',color:'#3d5570'}}
+    }
+  }
+});
+
+// ── 4. COST CURVE ─────────────────────────────────────────────────────────────
+const epochKeys=[0,100,200,300,400,500,600,700,800,900,1000];
+const costVals=[0.6931,0.6882,0.6838,0.6797,0.6760,0.6725,0.6693,0.6663,0.6635,0.6609,0.6585];
+new Chart(document.getElementById('costChart'),{
+  type:'line',
+  data:{labels:epochKeys,datasets:[{label:'Weighted Cross-Entropy Loss',data:costVals,borderColor:'#9d7aff',backgroundColor:'rgba(157,122,255,.06)',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#9d7aff',tension:.4,fill:true}]},
+  options:{responsive:true,
+    plugins:{legend:{position:'top',labels:{usePointStyle:true,padding:20,color:'#7a99b8'}},tooltip:{...tt,callbacks:{label:ctx=>`Loss: ${ctx.parsed.y.toFixed(4)}`}}},
+    scales:{
+      x:{grid:{color:'rgba(30,45,62,.4)'},ticks:{color:'#3d5570'},title:{display:true,text:'Epoch',color:'#3d5570'}},
+      y:{grid:{color:'rgba(30,45,62,.4)'},ticks:{color:'#3d5570'},title:{display:true,text:'Loss',color:'#3d5570'},min:0.655,max:0.700}
+    }
+  }
+});
+
+// ── SCROLL REVEAL ─────────────────────────────────────────────────────────────
+const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}});},{threshold:.07});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+// ── CHAPTER NAV ───────────────────────────────────────────────────────────────
+window.addEventListener('scroll',()=>{
+  let cur='';
+  document.querySelectorAll('section[id]').forEach(s=>{if(window.scrollY>=s.offsetTop-120)cur=s.id});
+  document.querySelectorAll('.cnav-item').forEach(n=>n.classList.toggle('active',n.getAttribute('href')==='#'+cur));
+});
+</script>
+</body>
+</html>

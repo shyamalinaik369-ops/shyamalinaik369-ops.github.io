@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Agro-Food Emissions · Shyamali Naik</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@300;400;500&family=Nunito:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #080f0a;
+  --bg2: #0c1510;
+  --bg3: #101d14;
+  --surface: #162419;
+  --border: #1f3526;
+  --green: #3dba6f;
+  --green2: #2a9456;
+  --lime: #a8e063;
+  --amber: #e8a83a;
+  --red: #e85a3a;
+  --blue: #5ab4e8;
+  --text: #e8f2eb;
+  --soft: #8ab49a;
+  --muted: #4a7057;
+  --font-display: 'Cormorant Garamond', serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-body: 'Nunito', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:16px;line-height:1.7;overflow-x:hidden}
+
+/* organic dot grid */
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,rgba(61,186,111,.06) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 5vw;background:rgba(8,15,10,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+.nav-back{font-family:var(--font-mono);font-size:.75rem;color:var(--green);text-decoration:none;letter-spacing:.1em;transition:opacity .2s}
+.nav-back:hover{opacity:.7}
+.nav-title{font-family:var(--font-mono);font-size:.7rem;color:var(--muted);letter-spacing:.08em}
+
+/* HERO */
+.hero{position:relative;min-height:88vh;display:flex;flex-direction:column;justify-content:center;padding:100px 5vw 60px;z-index:1;overflow:hidden}
+.hero-badge{display:inline-flex;align-items:center;gap:.6rem;font-family:var(--font-mono);font-size:.68rem;color:var(--lime);letter-spacing:.18em;text-transform:uppercase;border:1px solid rgba(168,224,99,.25);padding:.35rem .9rem;border-radius:2px;margin-bottom:2rem;opacity:0;animation:fadeUp .6s ease forwards .1s}
+.hero-title{font-family:var(--font-display);font-size:clamp(2.4rem,6vw,5.5rem);line-height:1.05;color:var(--text);max-width:820px;opacity:0;animation:fadeUp .6s ease forwards .3s}
+.hero-title em{font-style:italic;color:var(--green)}
+.hero-sub{max-width:600px;margin-top:1.5rem;font-size:1rem;color:var(--soft);font-weight:300;line-height:1.8;opacity:0;animation:fadeUp .6s ease forwards .5s}
+.hero-meta{display:flex;gap:2rem;flex-wrap:wrap;margin-top:1.8rem;opacity:0;animation:fadeUp .6s ease forwards .7s}
+.meta-pill{font-family:var(--font-mono);font-size:.68rem;color:var(--muted);letter-spacing:.06em;padding:.3rem .8rem;border:1px solid var(--border);border-radius:20px}
+
+/* STAT STRIP */
+.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-radius:8px;overflow:hidden;margin-top:2.5rem;border:1px solid var(--border);opacity:0;animation:fadeUp .6s ease forwards .9s}
+.stat-cell{background:var(--bg2);padding:1.4rem;text-align:center}
+.stat-val{font-family:var(--font-display);font-size:1.9rem;line-height:1;margin-bottom:.35rem}
+.stat-val.g{color:var(--green)}
+.stat-val.a{color:var(--amber)}
+.stat-val.r{color:var(--red)}
+.stat-val.b{color:var(--blue)}
+.stat-label{font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.stat-sub{font-size:.72rem;color:var(--muted);margin-top:.2rem}
+
+/* STICKY NAV */
+.chapter-nav{position:sticky;top:60px;z-index:90;background:rgba(8,15,10,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:.75rem 5vw;display:flex;gap:0;overflow-x:auto}
+.cnav-item{font-family:var(--font-mono);font-size:.67rem;color:var(--muted);letter-spacing:.1em;white-space:nowrap;padding:.4rem 1rem;border-radius:3px;cursor:pointer;transition:all .2s;text-decoration:none}
+.cnav-item:hover,.cnav-item.active{color:var(--green);background:rgba(61,186,111,.08)}
+.cnav-sep{color:var(--border);padding:.4rem .2rem;font-family:var(--font-mono);font-size:.8rem}
+
+/* SECTIONS */
+section{position:relative;z-index:1;padding:80px 5vw}
+.eyebrow{font-family:var(--font-mono);font-size:.68rem;color:var(--green);letter-spacing:.2em;text-transform:uppercase;margin-bottom:1rem}
+.sec-title{font-family:var(--font-display);font-size:clamp(1.7rem,3.2vw,2.8rem);color:var(--text);line-height:1.15;margin-bottom:1.5rem}
+.sec-title em{font-style:italic;color:var(--green)}
+.body-text{color:var(--soft);font-weight:300;font-size:.95rem;line-height:1.85;max-width:700px;margin-bottom:1.2rem}
+
+/* DIVIDER */
+.divider{height:1px;background:linear-gradient(to right,transparent,var(--border),transparent)}
+
+/* CALLOUT */
+.callout{background:linear-gradient(135deg,rgba(61,186,111,.07),rgba(61,186,111,.02));border-left:3px solid var(--green);padding:1.4rem 1.8rem;border-radius:0 8px 8px 0;margin:2rem 0}
+.callout-label{font-family:var(--font-mono);font-size:.62rem;color:var(--green);letter-spacing:.2em;text-transform:uppercase;margin-bottom:.5rem}
+.callout p{color:var(--soft);font-size:.9rem;font-weight:300}
+.callout p strong{color:var(--text)}
+
+/* DB SCHEMA */
+.schema-wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:2rem}
+.db-table{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border-color .25s,transform .25s}
+.db-table:hover{border-color:var(--green2);transform:translateY(-3px)}
+.db-header{background:var(--surface);padding:.8rem 1.2rem;display:flex;align-items:center;gap:.7rem}
+.db-icon{font-size:1rem}
+.db-name{font-family:var(--font-mono);font-size:.75rem;color:var(--green);letter-spacing:.08em;font-weight:500}
+.db-type{font-family:var(--font-mono);font-size:.58rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-left:auto}
+.db-fields{padding:.8rem 1.2rem}
+.db-field{display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;border-bottom:1px solid rgba(31,53,38,.5)}
+.db-field:last-child{border-bottom:none}
+.field-name{font-family:var(--font-mono);font-size:.68rem;color:var(--soft)}
+.field-name.pk{color:var(--amber)}
+.field-name.fk{color:var(--blue)}
+.field-type{font-family:var(--font-mono);font-size:.6rem;color:var(--muted)}
+.db-purpose{padding:.8rem 1.2rem;background:rgba(61,186,111,.04);font-size:.78rem;color:var(--muted);font-style:italic;border-top:1px solid var(--border)}
+
+/* FINDINGS GRID */
+.findings-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;margin-top:2rem}
+.finding-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.6rem;transition:border-color .25s,transform .2s}
+.finding-card:hover{border-color:var(--green2);transform:translateY(-3px)}
+.finding-num{font-family:var(--font-display);font-size:2.5rem;color:var(--border);line-height:1;margin-bottom:.6rem;font-style:italic}
+.finding-title{font-family:var(--font-display);font-size:1.1rem;color:var(--text);margin-bottom:.6rem;line-height:1.3}
+.finding-body{font-size:.83rem;color:var(--soft);font-weight:300;line-height:1.7}
+.finding-tag{display:inline-block;font-family:var(--font-mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;padding:.18rem .55rem;border-radius:3px;margin-bottom:.7rem}
+.ft-trend{background:rgba(232,168,58,.1);color:var(--amber);border:1px solid rgba(232,168,58,.25)}
+.ft-corr{background:rgba(61,186,111,.1);color:var(--green);border:1px solid rgba(61,186,111,.25)}
+.ft-region{background:rgba(90,180,232,.1);color:var(--blue);border:1px solid rgba(90,180,232,.25)}
+.ft-fire{background:rgba(232,90,58,.1);color:var(--red);border:1px solid rgba(232,90,58,.25)}
+
+/* CHART */
+.chart-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.8rem;margin:2rem 0}
+.chart-title{font-family:var(--font-mono);font-size:.7rem;color:var(--soft);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1.4rem}
+canvas{width:100%!important}
+
+/* CORRELATION GRID */
+.corr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:1.5rem}
+.corr-cell{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.2rem;text-align:center}
+.corr-pair{font-family:var(--font-mono);font-size:.65rem;color:var(--muted);letter-spacing:.05em;margin-bottom:.5rem;line-height:1.5}
+.corr-val{font-family:var(--font-display);font-size:1.8rem;line-height:1}
+.corr-desc{font-size:.72rem;color:var(--muted);margin-top:.3rem}
+
+/* TOP EMITTERS */
+.emitter-list{display:flex;flex-direction:column;gap:.6rem;margin-top:1.5rem}
+.emitter-row{display:flex;align-items:center;gap:1rem}
+.emitter-rank{font-family:var(--font-mono);font-size:.7rem;color:var(--muted);width:1.5rem;flex-shrink:0;text-align:right}
+.emitter-name{font-family:var(--font-mono);font-size:.78rem;color:var(--soft);width:180px;flex-shrink:0}
+.emitter-bar-wrap{flex:1;background:var(--bg3);border-radius:3px;height:8px;overflow:hidden}
+.emitter-bar{height:100%;border-radius:3px;transition:width 1s ease}
+.emitter-val{font-family:var(--font-mono);font-size:.68rem;color:var(--muted);width:60px;text-align:right;flex-shrink:0}
+
+/* RUSSIA SPOTLIGHT */
+.russia-card{background:linear-gradient(135deg,var(--bg3),var(--surface));border:1px solid var(--amber);border-radius:12px;padding:2.5rem;margin:2rem 0;position:relative;overflow:hidden}
+.russia-card::before{content:'★ SPOTLIGHT';position:absolute;top:1.2rem;right:1.5rem;font-family:var(--font-mono);font-size:.6rem;letter-spacing:.2em;color:var(--amber);border:1px solid rgba(232,168,58,.4);padding:.2rem .55rem;border-radius:3px}
+.russia-title{font-family:var(--font-display);font-size:clamp(1.3rem,2.5vw,1.9rem);color:var(--text);margin-bottom:1rem;line-height:1.3}
+.russia-desc{color:var(--soft);font-weight:300;font-size:.92rem;line-height:1.8;max-width:720px;margin-bottom:1.8rem}
+.russia-timeline{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.rt-item{background:rgba(232,168,58,.06);border:1px solid rgba(232,168,58,.2);border-radius:6px;padding:1rem}
+.rt-period{font-family:var(--font-mono);font-size:.68rem;color:var(--amber);letter-spacing:.1em;margin-bottom:.4rem}
+.rt-title{font-family:var(--font-display);font-size:1rem;color:var(--text);margin-bottom:.4rem}
+.rt-body{font-size:.78rem;color:var(--soft);font-weight:300;line-height:1.6}
+
+/* TAKEAWAY */
+.takeaway{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.8rem 2rem;margin-top:2rem;display:flex;align-items:flex-start;gap:1.2rem}
+.takeaway-icon{font-size:1.6rem;flex-shrink:0}
+.takeaway-text{font-family:var(--font-display);font-size:1.05rem;color:var(--soft);font-style:italic;line-height:1.65}
+.takeaway-text strong{color:var(--text);font-style:normal}
+
+/* SKILL TAGS */
+.skill-tags{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.5rem}
+.skill-tag{font-family:var(--font-mono);font-size:.68rem;color:var(--muted);padding:.3rem .75rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;letter-spacing:.04em}
+
+/* GITHUB CTA */
+.github-cta{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:2.5rem;text-align:center;margin-top:2rem}
+.github-cta h3{font-family:var(--font-display);font-size:1.7rem;color:var(--text);margin-bottom:.7rem}
+.github-cta p{color:var(--soft);font-size:.9rem;max-width:480px;margin:0 auto 1.5rem}
+.btn-group{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.6rem;border-radius:4px;font-family:var(--font-mono);font-size:.76rem;letter-spacing:.08em;text-decoration:none;cursor:pointer;transition:all .2s;border:none}
+.btn-primary{background:var(--green);color:var(--bg);font-weight:500}
+.btn-primary:hover{background:var(--green2);transform:translateY(-2px)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--soft)}
+.btn-outline:hover{border-color:var(--green);color:var(--green);transform:translateY(-2px)}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.reveal.visible{opacity:1;transform:none}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:768px){
+  .stat-strip{grid-template-columns:repeat(2,1fr)}
+  .schema-wrap{grid-template-columns:1fr}
+  .findings-grid{grid-template-columns:1fr}
+  .corr-grid{grid-template-columns:repeat(2,1fr)}
+  .russia-timeline{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-back">← Back to Portfolio</a>
+  <span class="nav-title">ENVIRONMENTAL DATA SCIENCE · 2024</span>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">🌍 Environmental Data Science &nbsp;·&nbsp; Data Storing, Manipulation & Visualisation</div>
+  <h1 class="hero-title">What is the food on your<br/>plate doing to the <em>planet</em>?</h1>
+  <p class="hero-sub">A data-driven investigation into 30 years of global agri-food CO₂ emissions — from designing a relational database from scratch, to uncovering how food systems, population growth, and land use are reshaping the Earth's climate.</p>
+  <div class="hero-meta">
+    <span class="meta-pill">📦 Dataset: FAO + IPCC via Kaggle</span>
+    <span class="meta-pill">📅 Period: 1990–2020</span>
+    <span class="meta-pill">🗃️ Records: 7,000+</span>
+    <span class="meta-pill">📊 Attributes: 31</span>
+    <span class="meta-pill">🛠 Python · SQLite · Pandas · Seaborn</span>
+  </div>
+  <div class="stat-strip">
+    <div class="stat-cell">
+      <div class="stat-val a">62%</div>
+      <div class="stat-label">of global CO₂</div>
+      <div class="stat-sub">comes from agri-food systems</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-val r">+0.91</div>
+      <div class="stat-label">Correlation</div>
+      <div class="stat-sub">Total emission ↔ Urban population</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-val g">3 Tables</div>
+      <div class="stat-label">Relational DB</div>
+      <div class="stat-sub">Built from scratch in SQLite</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-val b">30 Years</div>
+      <div class="stat-label">Time Span</div>
+      <div class="stat-sub">1990–2020 global coverage</div>
+    </div>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <a href="#problem" class="cnav-item active">The Question</a>
+  <span class="cnav-sep">›</span>
+  <a href="#database" class="cnav-item">Database Design</a>
+  <span class="cnav-sep">›</span>
+  <a href="#findings" class="cnav-item">Key Findings</a>
+  <span class="cnav-sep">›</span>
+  <a href="#correlations" class="cnav-item">Correlations</a>
+  <span class="cnav-sep">›</span>
+  <a href="#russia" class="cnav-item">Russia Deep-Dive</a>
+  <span class="cnav-sep">›</span>
+  <a href="#skills" class="cnav-item">Skills Demonstrated</a>
+</div>
+
+<div class="divider"></div>
+
+<!-- THE QUESTION -->
+<section id="problem">
+  <div class="eyebrow reveal">01 · The Question</div>
+  <h2 class="sec-title reveal">Agriculture feeds the world.<br/>It also <em>heats</em> it.</h2>
+  <p class="body-text reveal">The food system — everything from growing crops and raising livestock, to packaging, transporting, and disposing of food — is responsible for roughly 62% of the world's annual CO₂ emissions. Yet when people think about climate change, they often focus on cars and power plants. The agricultural sector rarely gets the same attention.</p>
+  <p class="body-text reveal">This project asked a deceptively simple question: <strong style="color:var(--text)">Where exactly are food-related emissions coming from, how have they changed over 30 years, and what drives them?</strong> Using a dataset combining FAO and IPCC data across 7,000+ records and 31 variables, the goal was to turn raw numbers into clear, actionable insight — for policymakers, researchers, and anyone trying to understand humanity's relationship with the climate.</p>
+
+  <div class="callout reveal">
+    <div class="callout-label">What makes this different</div>
+    <p>Rather than simply loading a spreadsheet into Python, this project began by <strong>designing a proper relational database</strong> — the kind used in real-world data systems — before performing any analysis. This data engineering step is what separates a data analyst from a basic spreadsheet user.</p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- DATABASE DESIGN -->
+<section id="database">
+  <div class="eyebrow reveal">02 · Database Design</div>
+  <h2 class="sec-title reveal">Before any analysis:<br/>building the <em>architecture</em>.</h2>
+  <p class="body-text reveal">Most students import a CSV and start plotting immediately. This project took a different approach — first designing a <strong style="color:var(--text)">normalised relational database</strong> using SQLite, splitting the data into three logically separate tables that mirror how production databases work in industry. Each table has a clear purpose, and they are linked through shared keys — just like the databases behind real business applications.</p>
+
+  <div class="schema-wrap reveal">
+    <div class="db-table">
+      <div class="db-header">
+        <span class="db-icon">🗺️</span>
+        <span class="db-name">AreaInfo</span>
+        <span class="db-type">Central Table</span>
+      </div>
+      <div class="db-fields">
+        <div class="db-field"><span class="field-name pk">Area (PK)</span><span class="field-type">TEXT</span></div>
+        <div class="db-field"><span class="field-name pk">Year (PK)</span><span class="field-type">INTEGER</span></div>
+        <div class="db-field"><span class="field-name">rural_population</span><span class="field-type">REAL</span></div>
+        <div class="db-field"><span class="field-name">urban_population</span><span class="field-type">REAL</span></div>
+        <div class="db-field"><span class="field-name">avg_temperature_rise</span><span class="field-type">REAL</span></div>
+      </div>
+      <div class="db-purpose">Stores demographic + climate data per region and year. The anchor table everything else links back to.</div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-header">
+        <span class="db-icon">🏭</span>
+        <span class="db-name">EmissionSources</span>
+        <span class="db-type">Detail Table</span>
+      </div>
+      <div class="db-fields">
+        <div class="db-field"><span class="field-name pk">Emission_ID (PK)</span><span class="field-type">AUTO</span></div>
+        <div class="db-field"><span class="field-name fk">Area (FK)</span><span class="field-type">TEXT</span></div>
+        <div class="db-field"><span class="field-name fk">Year (FK)</span><span class="field-type">INTEGER</span></div>
+        <div class="db-field"><span class="field-name">savanna_fires</span><span class="field-type">REAL</span></div>
+        <div class="db-field"><span class="field-name">forest_fires</span><span class="field-type">REAL</span></div>
+        <div class="db-field"><span class="field-name">rice_cultivation</span><span class="field-type">REAL</span></div>
+        <div class="db-field"><span class="field-name">food_transport</span><span class="field-type">REAL</span></div>
+        <div class="db-field"><span class="field-name">+ 14 more sources</span><span class="field-type">REAL</span></div>
+      </div>
+      <div class="db-purpose">One row per emission source, per region, per year. Enables source-level drill-down queries.</div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-header">
+        <span class="db-icon">📊</span>
+        <span class="db-name">EmissionSummary</span>
+        <span class="db-type">Aggregate Table</span>
+      </div>
+      <div class="db-fields">
+        <div class="db-field"><span class="field-name pk">Summary_ID (PK)</span><span class="field-type">AUTO</span></div>
+        <div class="db-field"><span class="field-name fk">Area (FK)</span><span class="field-type">TEXT</span></div>
+        <div class="db-field"><span class="field-name fk">Year (FK)</span><span class="field-type">INTEGER</span></div>
+        <div class="db-field"><span class="field-name">total_emissions</span><span class="field-type">REAL</span></div>
+      </div>
+      <div class="db-purpose">Pre-aggregated totals for fast comparative queries across regions and time — no repeated GROUP BY needed.</div>
+    </div>
+  </div>
+
+  <div class="callout reveal" style="margin-top:2rem">
+    <div class="callout-label">Why This Matters</div>
+    <p>This three-table normalised design <strong>eliminates data redundancy</strong>, maintains referential integrity via foreign keys, and mirrors the structure of real production databases. It shows the ability to think about data architecture — not just data analysis.</p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- KEY FINDINGS -->
+<section id="findings">
+  <div class="eyebrow reveal">03 · Key Findings</div>
+  <h2 class="sec-title reveal">10 findings that tell<br/>a <em>coherent story</em>.</h2>
+  <p class="body-text reveal">The EDA covered temporal trends, correlation analysis, regional comparisons, bivariate and multivariate analysis, and spatial mapping. Here are the most significant discoveries — told in plain language.</p>
+
+  <!-- Top Emitters Chart -->
+  <div class="chart-box reveal">
+    <div class="chart-title">Top 10 CO₂ Emitting Countries — Total Agri-food Emissions 1990–2020 (kilotons)</div>
+    <canvas id="emittersChart" height="300"></canvas>
+  </div>
+
+  <div class="findings-grid reveal">
+    <div class="finding-card">
+      <span class="finding-tag ft-trend">Global Trend</span>
+      <div class="finding-num">01</div>
+      <div class="finding-title">China and Brazil dominate — for very different reasons</div>
+      <p class="finding-body">China's emissions are driven by industrial food production, energy use, and its enormous rural population. Brazil's are driven primarily by deforestation and savanna burning — land cleared to grow soy and raise cattle. Two countries, similar emission volumes, completely different root causes.</p>
+    </div>
+
+    <div class="finding-card">
+      <span class="finding-tag ft-corr">Correlation</span>
+      <div class="finding-num">02</div>
+      <div class="finding-title">As the world urbanises, emissions climb with it</div>
+      <p class="finding-body">Urban population shows a strikingly strong correlation (0.91) with total emissions — stronger even than rural population (0.71). This tells a nuanced story: urbanisation drives demand for processed, packaged, and transported food — precisely the high-emission categories in this dataset.</p>
+    </div>
+
+    <div class="finding-card">
+      <span class="finding-tag ft-trend">Temporal</span>
+      <div class="finding-num">03</div>
+      <div class="finding-title">Global temperature and emissions rise in lockstep</div>
+      <p class="finding-body">The global warming trends chart showed both average temperature and total CO₂ emissions increasing consistently from 1990 to 2020. The trajectory accelerated notably after 2000. If unchanged, the data projects continued warming — directly supporting the scientific consensus behind the Paris Agreement targets.</p>
+    </div>
+
+    <div class="finding-card">
+      <span class="finding-tag ft-fire">Fire & Land</span>
+      <div class="finding-num">04</div>
+      <div class="finding-title">Fire emissions are volatile; forest loss is steady and dangerous</div>
+      <p class="finding-body">Savanna and forest fires spike dramatically in certain years (the late 1990s Indonesian fires, for example), creating noisy emission signals. Forestland emissions, by contrast, show a slow but relentless decline — forests being converted to farmland, permanently removing a key carbon sink from the planet.</p>
+    </div>
+
+    <div class="finding-card">
+      <span class="finding-tag ft-region">Regional</span>
+      <div class="finding-num">05</div>
+      <div class="finding-title">Asia carries the heaviest burden — but Africa is accelerating</div>
+      <p class="finding-body">Asia consistently tops both emissions and population figures. But the more concerning trend is in Africa, where both population growth and emissions are accelerating rapidly — with limited access to the clean technologies needed to decouple growth from carbon output.</p>
+    </div>
+
+    <div class="finding-card">
+      <span class="finding-tag ft-corr">Emissions Sources</span>
+      <div class="finding-num">06</div>
+      <div class="finding-title">Food processing and transport, not farming, are the hidden culprits</div>
+      <p class="finding-body">The attribute correlation heatmap showed that food_transport, food_household_consumption, pesticides_manufacturing, and food_retail are the variables most strongly correlated with total_emission. The act of farming itself is less the problem than what happens to food <em>after</em> it leaves the field.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- CORRELATIONS -->
+<section id="correlations">
+  <div class="eyebrow reveal">04 · Correlation Analysis</div>
+  <h2 class="sec-title reveal">The numbers that connect<br/><em>people, food, and climate</em>.</h2>
+  <p class="body-text reveal">Correlation analysis revealed how tightly linked population, emissions, and temperature rise really are. The values below come directly from the correlation heatmap produced in the analysis.</p>
+
+  <div class="corr-grid reveal">
+    <div class="corr-cell">
+      <div class="corr-pair">Total Emission<br/>↔<br/>Urban Population</div>
+      <div class="corr-val" style="color:var(--red)">0.91</div>
+      <div class="corr-desc">Very strong positive link</div>
+    </div>
+    <div class="corr-cell">
+      <div class="corr-pair">Total Emission<br/>↔<br/>Rural Population</div>
+      <div class="corr-val" style="color:var(--amber)">0.71</div>
+      <div class="corr-desc">Strong positive link</div>
+    </div>
+    <div class="corr-cell">
+      <div class="corr-pair">Urban & Rural<br/>↔<br/>Population</div>
+      <div class="corr-val" style="color:var(--amber)">0.85</div>
+      <div class="corr-desc">Strong demographic link</div>
+    </div>
+    <div class="corr-cell">
+      <div class="corr-pair">Avg Temperature<br/>↔<br/>Total Emission</div>
+      <div class="corr-val" style="color:var(--green)">0.02</div>
+      <div class="corr-desc">Weak direct correlation*</div>
+    </div>
+  </div>
+
+  <div class="callout reveal" style="margin-top:1.5rem">
+    <div class="callout-label">Analyst Note — The Surprising Result</div>
+    <p>The weak direct correlation (0.02) between average temperature rise and total emission seems counterintuitive. This is a critical analytical insight: <strong>temperature rise is a global phenomenon driven by cumulative, atmospheric CO₂ — not by individual country emissions in a given year.</strong> A country's local temperature rise doesn't neatly correlate with its own emission levels. This finding shows the difference between correlation and causation, and why domain knowledge matters in data analysis.</p>
+  </div>
+
+  <!-- Emission sources chart -->
+  <div class="chart-box reveal">
+    <div class="chart-title">Global Food Emission Growth by Category (1990–2020, indexed to 1990 = 1.0)</div>
+    <canvas id="emissionGrowthChart" height="300"></canvas>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- RUSSIA SPOTLIGHT -->
+<section id="russia">
+  <div class="eyebrow reveal">05 · Country Deep-Dive</div>
+  <h2 class="sec-title reveal">Why did Russia's emissions<br/><em>collapse</em> — then recover?</h2>
+  <p class="body-text reveal">The Russia case study (1990–2020) is the most analytically interesting section of this project. It demonstrates how a single country's emissions can tell the story of an entire geopolitical era — and why data analysts must understand history, not just numbers.</p>
+
+  <div class="russia-card reveal">
+    <div class="russia-title">Russian Federation: 30 Years of Agri-food Emissions — A Story in Three Acts</div>
+    <p class="russia-desc">Russia's emission trajectory from 1990 to 2020 is unlike any other country in this dataset. Rather than a smooth upward trend, it shows a dramatic collapse followed by gradual recovery — a direct mirror of the Soviet Union's dissolution and Russia's turbulent transition to a market economy.</p>
+    <div class="russia-timeline">
+      <div class="rt-item">
+        <div class="rt-period">1990–1998</div>
+        <div class="rt-title">The Soviet Collapse</div>
+        <p class="rt-body">The dissolution of the USSR triggered an economic freefall. State-managed collective farms collapsed overnight. Agricultural output fell by over 40%. With less farming, less food processing, and less transportation — emissions dropped dramatically. The environmental "benefit" of economic catastrophe.</p>
+      </div>
+      <div class="rt-item">
+        <div class="rt-period">1998–2008</div>
+        <div class="rt-title">Slow Recovery</div>
+        <p class="rt-body">Under Putin's early presidency, economic stabilisation and rising oil revenues allowed gradual agricultural reinvestment. Emissions begin to climb again as food production recovered — but never back to Soviet-era levels, as the agricultural sector was restructured around market efficiency rather than output volume.</p>
+      </div>
+      <div class="rt-item">
+        <div class="rt-period">2008–2020</div>
+        <div class="rt-title">Modern Plateau</div>
+        <p class="rt-body">Emissions stabilise at a new level — lower than the Soviet peak, but higher than the post-collapse trough. Russia becomes a major grain exporter, driving a new wave of agricultural activity. The data shows a country whose environmental footprint is permanently shaped by its political history.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-icon">💡</div>
+    <div class="takeaway-text"><strong>The Russia analysis proves a crucial point:</strong> data alone doesn't tell stories — context does. Without knowing the history of Soviet collapse, the emission dip looks like an anomaly. With that context, it becomes one of the most vivid examples of how political events reshape environmental data. This is the difference between data reporting and data analysis.</div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- SKILLS -->
+<section id="skills">
+  <div class="eyebrow reveal">06 · Skills Demonstrated</div>
+  <h2 class="sec-title reveal">What this project<br/><em>actually proves</em>.</h2>
+  <p class="body-text reveal">Beyond the environmental insights, this project demonstrates a complete end-to-end data workflow — from engineering the data structure to delivering visual and narrative analysis.</p>
+
+  <div class="findings-grid reveal">
+    <div class="finding-card">
+      <div class="finding-title" style="margin-bottom:.6rem">🗃️ Data Engineering</div>
+      <p class="finding-body">Designed and implemented a 3-table normalised SQLite relational database using Python's sqlite3 library — including primary keys, foreign key relationships, and appropriate data types. This goes significantly beyond what most analytics courses require.</p>
+    </div>
+    <div class="finding-card">
+      <div class="finding-title" style="margin-bottom:.6rem">🧹 Data Preprocessing</div>
+      <p class="finding-body">Applied IQR-based outlier detection, verified data types, standardised formats, removed duplicates, and made a considered decision to retain meaningful environmental outliers (wildfires, deforestation events) rather than blindly removing them.</p>
+    </div>
+    <div class="finding-card">
+      <div class="finding-title" style="margin-bottom:.6rem">📊 Exploratory Data Analysis</div>
+      <p class="finding-body">Conducted 10+ distinct analyses including distribution analysis, correlation heatmaps, category comparisons, temporal trends, bivariate scatter plots, multivariate 3D scatter plots, and geographic spatial mapping — the full toolkit of EDA methods.</p>
+    </div>
+    <div class="finding-card">
+      <div class="finding-title" style="margin-bottom:.6rem">🗺️ Spatial Visualisation</div>
+      <p class="finding-body">Produced a choropleth world map of CO₂ emissions by country in 2020, demonstrating the ability to move beyond standard 2D charts into geographic data representation — a valuable skill in environmental, policy, and business analytics.</p>
+    </div>
+  </div>
+
+  <div class="skill-tags reveal">
+    <span class="skill-tag">Python</span>
+    <span class="skill-tag">Pandas</span>
+    <span class="skill-tag">SQLite / sqlite3</span>
+    <span class="skill-tag">Seaborn</span>
+    <span class="skill-tag">Matplotlib</span>
+    <span class="skill-tag">Plotly (3D + Maps)</span>
+    <span class="skill-tag">Relational DB Design</span>
+    <span class="skill-tag">IQR Outlier Detection</span>
+    <span class="skill-tag">Correlation Analysis</span>
+    <span class="skill-tag">Temporal Analysis</span>
+    <span class="skill-tag">Spatial Mapping</span>
+    <span class="skill-tag">FAO / IPCC Data</span>
+  </div>
+
+  <div class="github-cta reveal">
+    <h3>Explore the full analysis</h3>
+    <p>The complete Jupyter notebook — database schema, all visualisations, and the Russia deep-dive — is available on GitHub.</p>
+    <div class="btn-group">
+      <a href="#" class="btn btn-primary">View on GitHub →</a>
+      <a href="index.html" class="btn btn-outline">← Back to Portfolio</a>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+Chart.defaults.color = '#4a7057';
+Chart.defaults.borderColor = '#1f3526';
+Chart.defaults.font.family = "'JetBrains Mono', monospace";
+Chart.defaults.font.size = 11;
+
+// TOP EMITTERS
+const countries = ['China','China mainland','Brazil','Indonesia','USA','India','DR Congo','Canada','Japan','Mexico'];
+const emissions = [620,580,390,280,250,230,150,120,110,105];
+const barColors = emissions.map((v,i) => i<2 ? 'rgba(232,90,58,.8)' : i<5 ? 'rgba(232,168,58,.7)' : 'rgba(61,186,111,.6)');
+
+new Chart(document.getElementById('emittersChart'),{
+  type:'bar',
+  data:{
+    labels:countries,
+    datasets:[{label:'Total CO₂ Emissions (relative, kt ×10⁶)',data:emissions,backgroundColor:barColors,borderColor:barColors.map(c=>c.replace('.8','.95').replace('.7','.9').replace('.6','.8')),borderWidth:1,borderRadius:4}]
+  },
+  options:{
+    responsive:true,
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'#101d14',borderColor:'#1f3526',borderWidth:1,callbacks:{label:ctx=>`Emissions: ${ctx.parsed.y} (relative index)`}}},
+    scales:{
+      x:{grid:{display:false},ticks:{color:'#4a7057',maxRotation:30}},
+      y:{grid:{color:'rgba(31,53,38,.5)'},ticks:{color:'#4a7057'},title:{display:true,text:'Total Emissions (relative)',color:'#4a7057'}}
+    }
+  }
+});
+
+// EMISSION GROWTH CHART
+const years = ['1990','1995','2000','2005','2010','2015','2020'];
+new Chart(document.getElementById('emissionGrowthChart'),{
+  type:'line',
+  data:{
+    labels:years,
+    datasets:[
+      {label:'Food Transport',data:[1.0,1.15,1.3,1.55,1.85,2.1,2.4],borderColor:'#e8a83a',backgroundColor:'rgba(232,168,58,.05)',borderWidth:2,tension:.4,pointRadius:3,fill:true},
+      {label:'Food Household Consumption',data:[1.0,1.1,1.22,1.38,1.52,1.68,1.82],borderColor:'#3dba6f',backgroundColor:'rgba(61,186,111,.04)',borderWidth:2,tension:.4,pointRadius:3,fill:true},
+      {label:'Food Processing',data:[1.0,1.08,1.18,1.28,1.38,1.28,1.02],borderColor:'#5ab4e8',backgroundColor:'rgba(90,180,232,.04)',borderWidth:2,tension:.4,pointRadius:3,fill:true},
+      {label:'Agrifood Waste Disposal',data:[1.0,1.12,1.28,1.42,1.48,1.5,1.52],borderColor:'#a8e063',backgroundColor:'rgba(168,224,99,.03)',borderWidth:2,tension:.4,pointRadius:3,borderDash:[4,3],fill:true},
+      {label:'Food Retail',data:[1.0,1.05,1.12,1.22,1.35,1.45,1.55],borderColor:'#e85a3a',backgroundColor:'rgba(232,90,58,.03)',borderWidth:2,tension:.4,pointRadius:3,borderDash:[4,3],fill:true}
+    ]
+  },
+  options:{
+    responsive:true,
+    interaction:{mode:'index',intersect:false},
+    plugins:{
+      legend:{position:'top',labels:{usePointStyle:true,padding:16,color:'#8ab49a',font:{size:10}}},
+      tooltip:{backgroundColor:'#101d14',borderColor:'#1f3526',borderWidth:1}
+    },
+    scales:{
+      x:{grid:{color:'rgba(31,53,38,.4)'},ticks:{color:'#4a7057'}},
+      y:{grid:{color:'rgba(31,53,38,.4)'},ticks:{color:'#4a7057',callback:v=>`${v}×`},title:{display:true,text:'Growth Index (1990 = 1.0)',color:'#4a7057'}}
+    }
+  }
+});
+
+// SCROLL REVEAL
+const reveals = document.querySelectorAll('.reveal');
+const obs = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}});
+},{threshold:.07});
+reveals.forEach(el=>obs.observe(el));
+
+// CHAPTER NAV ACTIVE
+const secs = document.querySelectorAll('section[id]');
+const navs = document.querySelectorAll('.cnav-item');
+window.addEventListener('scroll',()=>{
+  let cur='';
+  secs.forEach(s=>{if(window.scrollY>=s.offsetTop-120)cur=s.id});
+  navs.forEach(n=>n.classList.toggle('active',n.getAttribute('href')==='#'+cur));
+});
+</script>
+</body>
+</html>

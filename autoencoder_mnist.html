@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Autoencoder · MNIST Latent Space · Shyamali Naik</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#07050f;--bg2:#0d0a1a;--bg3:#131024;--surface:#1a1630;--border:#26204a;
+  --purple:#a855f7;--purple2:#7c3aed;--violet:#c084fc;--pink:#f472b6;
+  --teal:#2dd4bf;--amber:#fbbf24;--green:#34d399;--red:#f87171;
+  --text:#f0ebff;--soft:#9d8ec4;--muted:#52477a;
+  --font-display:'Libre Baskerville',serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --font-body:'Plus Jakarta Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:16px;line-height:1.7;overflow-x:hidden}
+
+/* starfield / cosmic grid */
+body::before{content:'';position:fixed;inset:0;
+  background-image:
+    radial-gradient(circle,rgba(168,85,247,.055) 1px,transparent 1px),
+    radial-gradient(circle,rgba(168,85,247,.025) 1px,transparent 1px);
+  background-size:60px 60px,20px 20px;
+  background-position:0 0,30px 30px;
+  pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;top:-15%;right:-5%;width:55%;height:60%;
+  background:radial-gradient(ellipse,rgba(168,85,247,.06) 0%,transparent 60%);
+  pointer-events:none;z-index:0}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 5vw;background:rgba(7,5,15,.93);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+.nav-back{font-family:var(--font-mono);font-size:.73rem;color:var(--purple);text-decoration:none;letter-spacing:.1em;transition:opacity .2s}
+.nav-back:hover{opacity:.65}
+.nav-title{font-family:var(--font-mono);font-size:.7rem;color:var(--muted);letter-spacing:.08em}
+
+/* HERO */
+.hero{position:relative;min-height:90vh;display:flex;flex-direction:column;justify-content:center;padding:100px 5vw 60px;z-index:1}
+.hero-badge{display:inline-flex;align-items:center;gap:.6rem;font-family:var(--font-mono);font-size:.68rem;color:var(--violet);letter-spacing:.18em;text-transform:uppercase;border:1px solid rgba(168,85,247,.3);padding:.35rem .9rem;border-radius:2px;margin-bottom:2rem;opacity:0;animation:fadeUp .6s ease forwards .1s}
+.hero-title{font-family:var(--font-display);font-size:clamp(2.4rem,6vw,5.4rem);line-height:1.05;color:var(--text);max-width:900px;opacity:0;animation:fadeUp .6s ease forwards .3s}
+.hero-title em{font-style:italic;color:var(--purple)}
+.hero-sub{max-width:650px;margin-top:1.5rem;font-size:1rem;color:var(--soft);font-weight:300;line-height:1.88;opacity:0;animation:fadeUp .6s ease forwards .5s}
+.hero-meta{display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:1.8rem;opacity:0;animation:fadeUp .6s ease forwards .7s}
+.meta-pill{font-family:var(--font-mono);font-size:.67rem;color:var(--muted);padding:.28rem .75rem;border:1px solid var(--border);border-radius:20px}
+
+/* COMPRESSION VISUAL */
+.compression-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-radius:8px;overflow:hidden;margin-top:2.5rem;border:1px solid var(--border);opacity:0;animation:fadeUp .6s ease forwards .9s}
+.cs-cell{background:var(--bg2);padding:1.4rem;text-align:center}
+.cs-val{font-family:var(--font-display);font-size:1.85rem;line-height:1;margin-bottom:.35rem}
+.cs-val.p{color:var(--purple)}.cs-val.v{color:var(--violet)}.cs-val.t{color:var(--teal)}.cs-val.g{color:var(--green)}
+.cs-label{font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.cs-sub{font-size:.72rem;color:var(--muted);margin-top:.2rem}
+
+/* CHAPTER NAV */
+.chapter-nav{position:sticky;top:60px;z-index:90;background:rgba(7,5,15,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:.75rem 5vw;display:flex;gap:0;overflow-x:auto}
+.cnav-item{font-family:var(--font-mono);font-size:.67rem;color:var(--muted);letter-spacing:.1em;white-space:nowrap;padding:.4rem 1rem;border-radius:3px;cursor:pointer;transition:all .2s;text-decoration:none}
+.cnav-item:hover,.cnav-item.active{color:var(--purple);background:rgba(168,85,247,.08)}
+.cnav-sep{color:var(--border);padding:.4rem .2rem;font-family:var(--font-mono);font-size:.8rem}
+
+/* SECTIONS */
+section{position:relative;z-index:1;padding:80px 5vw}
+.eyebrow{font-family:var(--font-mono);font-size:.68rem;color:var(--purple);letter-spacing:.2em;text-transform:uppercase;margin-bottom:1rem}
+.sec-title{font-family:var(--font-display);font-size:clamp(1.7rem,3.2vw,2.8rem);color:var(--text);line-height:1.15;margin-bottom:1.5rem}
+.sec-title em{font-style:italic;color:var(--purple)}
+.body-text{color:var(--soft);font-weight:300;font-size:.95rem;line-height:1.88;max-width:700px;margin-bottom:1.2rem}
+.divider{height:1px;background:linear-gradient(to right,transparent,var(--border),transparent)}
+
+.callout{background:linear-gradient(135deg,rgba(168,85,247,.08),rgba(168,85,247,.02));border-left:3px solid var(--purple);padding:1.4rem 1.8rem;border-radius:0 8px 8px 0;margin:2rem 0}
+.callout-label{font-family:var(--font-mono);font-size:.62rem;color:var(--purple);letter-spacing:.2em;text-transform:uppercase;margin-bottom:.5rem}
+.callout p{color:var(--soft);font-size:.9rem;font-weight:300;line-height:1.8}
+.callout p strong{color:var(--text)}
+
+/* ARCHITECTURE DIAGRAM */
+.arch-diagram{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:2.5rem;margin:2rem 0;overflow-x:auto}
+.arch-flow{display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:nowrap;min-width:600px}
+.arch-layer{display:flex;flex-direction:column;align-items:center;gap:.5rem}
+.arch-block{border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:.6rem .4rem;text-align:center}
+.arch-block .neurons{font-family:var(--font-display);font-size:1.4rem;line-height:1;margin-bottom:.2rem}
+.arch-block .label{font-family:var(--font-mono);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase}
+.arch-arrow{color:var(--muted);font-size:1.2rem;padding:0 .4rem;flex-shrink:0}
+.arch-label{font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-top:.6rem}
+
+/* LOSS CHART */
+.chart-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.8rem;margin:2rem 0}
+.chart-title{font-family:var(--font-mono);font-size:.7rem;color:var(--soft);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1.4rem}
+.chart-note{font-family:var(--font-mono);font-size:.66rem;color:var(--muted);margin-top:.9rem;line-height:1.6}
+canvas{width:100%!important}
+
+/* PHASE CARDS */
+.phase-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin:2rem 0}
+.phase-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.6rem;transition:border-color .25s,transform .2s}
+.phase-card:hover{border-color:rgba(168,85,247,.3);transform:translateY(-2px)}
+.phase-card.highlight{border-color:rgba(168,85,247,.35);background:linear-gradient(135deg,rgba(168,85,247,.06),rgba(168,85,247,.02))}
+.phase-num{font-family:var(--font-display);font-size:2.8rem;color:var(--border);line-height:1;margin-bottom:.6rem;font-style:italic}
+.phase-title{font-family:var(--font-display);font-size:1.15rem;color:var(--text);margin-bottom:.6rem}
+.phase-body{font-size:.83rem;color:var(--soft);font-weight:300;line-height:1.7}
+.phase-tag{display:inline-block;font-family:var(--font-mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;padding:.2rem .6rem;border-radius:3px;margin-bottom:.8rem}
+.tag-p{background:rgba(168,85,247,.1);color:var(--purple);border:1px solid rgba(168,85,247,.25)}
+.tag-v{background:rgba(192,132,252,.1);color:var(--violet);border:1px solid rgba(192,132,252,.25)}
+.tag-t{background:rgba(45,212,191,.1);color:var(--teal);border:1px solid rgba(45,212,191,.25)}
+.tag-a{background:rgba(251,191,36,.1);color:var(--amber);border:1px solid rgba(251,191,36,.25)}
+.tag-g{background:rgba(52,211,153,.1);color:var(--green);border:1px solid rgba(52,211,153,.25)}
+
+/* T-SNE SIMULATION */
+.tsne-container{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.8rem;margin:2rem 0}
+.tsne-legend{display:flex;flex-wrap:wrap;gap:.8rem;margin-top:1rem}
+.tsne-dot{display:inline-flex;align-items:center;gap:.4rem;font-family:var(--font-mono);font-size:.65rem;color:var(--soft)}
+.tsne-dot-circle{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* EXPERIMENT CARDS */
+.exp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin:2rem 0}
+.exp-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.4rem;transition:border-color .25s,transform .2s}
+.exp-card:hover{border-color:rgba(168,85,247,.3);transform:translateY(-2px)}
+.exp-icon{font-size:1.6rem;margin-bottom:.6rem}
+.exp-title{font-family:var(--font-display);font-size:1rem;color:var(--text);margin-bottom:.5rem;line-height:1.3}
+.exp-body{font-size:.8rem;color:var(--soft);font-weight:300;line-height:1.65}
+.exp-result{margin-top:.8rem;font-family:var(--font-mono);font-size:.7rem;padding:.3rem .7rem;border-radius:20px;display:inline-block;color:var(--purple);border:1px solid rgba(168,85,247,.3);background:rgba(168,85,247,.06)}
+
+/* NEURON ACTIVATION BARS */
+.neuron-section{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.8rem;margin:2rem 0}
+.neuron-row{display:flex;align-items:center;gap:1rem;margin-bottom:.8rem}
+.neuron-label{font-family:var(--font-mono);font-size:.65rem;color:var(--muted);width:60px;flex-shrink:0}
+.neuron-bar-wrap{flex:1;background:var(--bg3);border-radius:3px;height:10px;overflow:hidden}
+.neuron-bar{height:100%;border-radius:3px;transition:width .8s ease}
+.neuron-val{font-family:var(--font-mono);font-size:.65rem;color:var(--soft);width:50px;text-align:right;flex-shrink:0}
+
+/* INTERPOLATION VISUAL */
+.interp-strip{display:flex;gap:3px;margin:1.5rem 0;align-items:center;overflow-x:auto}
+.interp-step{display:flex;flex-direction:column;align-items:center;gap:.4rem;flex-shrink:0}
+.interp-digit{width:52px;height:52px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;line-height:1;border:1px solid var(--border)}
+.interp-alpha{font-family:var(--font-mono);font-size:.58rem;color:var(--muted)}
+
+/* SKILLS */
+.findings-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;margin-top:2rem}
+.finding-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.6rem;transition:border-color .25s,transform .2s}
+.finding-card:hover{border-color:rgba(168,85,247,.25);transform:translateY(-2px)}
+.finding-title{font-family:var(--font-display);font-size:1.1rem;color:var(--text);margin-bottom:.6rem;line-height:1.3}
+.finding-body{font-size:.83rem;color:var(--soft);font-weight:300;line-height:1.7}
+
+.skill-tags{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:2rem}
+.skill-tag{font-family:var(--font-mono);font-size:.7rem;padding:.3rem .85rem;border-radius:20px;background:var(--bg3);border:1px solid var(--border);color:var(--soft);transition:all .2s}
+.skill-tag:hover{border-color:var(--purple2);color:var(--purple);background:rgba(168,85,247,.06)}
+
+.takeaway{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:2rem 2.5rem;margin-top:2.5rem;display:flex;align-items:flex-start;gap:1.5rem}
+.takeaway-icon{font-size:1.8rem;flex-shrink:0;margin-top:.1rem}
+.takeaway-text{font-family:var(--font-display);font-size:1.05rem;color:var(--soft);font-style:italic;line-height:1.7}
+.takeaway-text strong{color:var(--text);font-style:normal}
+
+/* REFLECTION CARD */
+.reflection{background:linear-gradient(135deg,rgba(168,85,247,.05),rgba(244,114,182,.04));border:1px solid rgba(168,85,247,.25);border-radius:10px;padding:2.5rem;margin:2.5rem 0;position:relative}
+.reflection::before{content:'✦';position:absolute;top:1.5rem;right:1.8rem;color:var(--purple);opacity:.4;font-size:1.2rem}
+.reflection-label{font-family:var(--font-mono);font-size:.62rem;color:var(--purple);letter-spacing:.2em;text-transform:uppercase;margin-bottom:.8rem}
+.reflection-text{font-family:var(--font-display);font-size:1.05rem;color:var(--soft);font-style:italic;line-height:1.8;max-width:680px}
+.reflection-text strong{color:var(--text);font-style:normal}
+
+.github-cta{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:3rem;text-align:center;margin-top:2.5rem}
+.github-cta h3{font-family:var(--font-display);font-size:1.6rem;color:var(--text);margin-bottom:.8rem}
+.github-cta p{color:var(--soft);font-size:.95rem;max-width:520px;margin:0 auto 1.8rem;font-weight:300}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;border-radius:4px;font-family:var(--font-mono);font-size:.78rem;letter-spacing:.08em;text-decoration:none;cursor:pointer;transition:all .2s;border:none}
+.btn-primary{background:var(--purple);color:var(--bg);font-weight:500}
+.btn-primary:hover{background:var(--purple2);transform:translateY(-2px)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--soft)}
+.btn-outline:hover{border-color:var(--purple);color:var(--purple);transform:translateY(-2px)}
+.btn-group{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .55s ease,transform .55s ease}
+.reveal.visible{opacity:1;transform:none}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:768px){
+  .compression-strip,.phase-grid,.findings-grid{grid-template-columns:1fr}
+  .exp-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-back">← Back to Portfolio</a>
+  <span class="nav-title">AUTOENCODER · MNIST · NEURAL NETWORKS</span>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">🧠 Unsupervised Deep Learning &nbsp;·&nbsp; TensorFlow · Keras · t-SNE</div>
+  <h1 class="hero-title">Teaching a machine to dream<br/>in <em>32 dimensions</em>.</h1>
+  <p class="hero-sub">A dense autoencoder trained on 70,000 handwritten digits — then taken apart to understand what it actually learned. This project goes far beyond reconstruction: it interrogates the latent space to ask whether neural networks discover the <em>DNA of digits</em>, not the digits themselves.</p>
+  <div class="hero-meta">
+    <span class="meta-pill">Dataset: MNIST · 70,000 images</span>
+    <span class="meta-pill">Architecture: 784 → 128 → 64 → 32 → 64 → 128 → 784</span>
+    <span class="meta-pill">Framework: TensorFlow / Keras</span>
+    <span class="meta-pill">Latent dim: 32</span>
+    <span class="meta-pill">Epochs: 20 · Batch: 256</span>
+  </div>
+  <div class="compression-strip">
+    <div class="cs-cell">
+      <div class="cs-val p">784</div>
+      <div class="cs-label">Input Dimensions</div>
+      <div class="cs-sub">28×28 pixels, flattened</div>
+    </div>
+    <div class="cs-cell">
+      <div class="cs-val v">32</div>
+      <div class="cs-label">Latent Dimensions</div>
+      <div class="cs-sub">The bottleneck — the "dream"</div>
+    </div>
+    <div class="cs-cell">
+      <div class="cs-val t">24.5×</div>
+      <div class="cs-label">Compression Ratio</div>
+      <div class="cs-sub">784 ÷ 32, lossily</div>
+    </div>
+    <div class="cs-cell">
+      <div class="cs-val g">0.0897</div>
+      <div class="cs-label">Final Val Loss</div>
+      <div class="cs-sub">BCE · No overfitting</div>
+    </div>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <a href="#architecture" class="cnav-item active">Architecture</a>
+  <span class="cnav-sep">›</span>
+  <a href="#training"     class="cnav-item">Training</a>
+  <span class="cnav-sep">›</span>
+  <a href="#latent"       class="cnav-item">Latent Space</a>
+  <span class="cnav-sep">›</span>
+  <a href="#neurons"      class="cnav-item">Neuron Stories</a>
+  <span class="cnav-sep">›</span>
+  <a href="#experiments"  class="cnav-item">Experiments</a>
+  <span class="cnav-sep">›</span>
+  <a href="#insights"     class="cnav-item">Insights</a>
+  <span class="cnav-sep">›</span>
+  <a href="#skills"       class="cnav-item">Skills</a>
+</div>
+
+<div class="divider"></div>
+
+<!-- 01 ARCHITECTURE -->
+<section id="architecture">
+  <div class="eyebrow reveal">01 · Architecture</div>
+  <h2 class="sec-title reveal">The hourglass that forces<br/><em>every pixel to earn its place.</em></h2>
+  <p class="body-text reveal">The autoencoder is a symmetric feedforward network — an encoder that compresses, and a decoder that reconstructs. The symmetry is intentional: the decoder must mirror the encoder's journey in reverse. The bottleneck layer is the constraint that gives the whole system meaning. If the decoder can reconstruct from only 32 numbers, those 32 numbers must encode something real.</p>
+
+  <div class="arch-diagram reveal">
+    <div class="arch-flow">
+      <!-- Input -->
+      <div class="arch-layer">
+        <div class="arch-block" style="background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.3);width:72px;height:130px">
+          <div class="neurons" style="color:var(--purple)">784</div>
+          <div class="label" style="color:var(--soft)">Input</div>
+        </div>
+        <div class="arch-label">28×28 px</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <!-- Enc 128 -->
+      <div class="arch-layer">
+        <div class="arch-block" style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.3);width:64px;height:110px">
+          <div class="neurons" style="color:var(--violet)">128</div>
+          <div class="label" style="color:var(--soft)">ReLU</div>
+        </div>
+        <div class="arch-label">Encoder</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <!-- Enc 64 -->
+      <div class="arch-layer">
+        <div class="arch-block" style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.3);width:55px;height:88px">
+          <div class="neurons" style="color:var(--violet)">64</div>
+          <div class="label" style="color:var(--soft)">ReLU</div>
+        </div>
+        <div class="arch-label">Encoder</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <!-- BOTTLENECK -->
+      <div class="arch-layer">
+        <div class="arch-block" style="background:rgba(251,191,36,.12);border:2px solid rgba(251,191,36,.5);width:50px;height:60px">
+          <div class="neurons" style="color:var(--amber);font-size:1.6rem">32</div>
+          <div class="label" style="color:var(--amber)">Z</div>
+        </div>
+        <div class="arch-label" style="color:var(--amber)">Latent Space</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <!-- Dec 64 -->
+      <div class="arch-layer">
+        <div class="arch-block" style="background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.25);width:55px;height:88px">
+          <div class="neurons" style="color:var(--teal)">64</div>
+          <div class="label" style="color:var(--soft)">ReLU</div>
+        </div>
+        <div class="arch-label">Decoder</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <!-- Dec 128 -->
+      <div class="arch-layer">
+        <div class="arch-block" style="background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.25);width:64px;height:110px">
+          <div class="neurons" style="color:var(--teal)">128</div>
+          <div class="label" style="color:var(--soft)">ReLU</div>
+        </div>
+        <div class="arch-label">Decoder</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <!-- Output -->
+      <div class="arch-layer">
+        <div class="arch-block" style="background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);width:72px;height:130px">
+          <div class="neurons" style="color:var(--green)">784</div>
+          <div class="label" style="color:var(--soft)">Sigmoid</div>
+        </div>
+        <div class="arch-label">28×28 px</div>
+      </div>
+    </div>
+    <p style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);text-align:center;margin-top:1.2rem">BCE Loss · Adam Optimiser · 20 Epochs · Batch 256 · Parameters: ~234K total</p>
+  </div>
+
+  <div class="callout reveal">
+    <div class="callout-label">Why Dense, not Convolutional?</div>
+    <p>A Dense Autoencoder flattens the image to a 1D vector and uses fully connected layers — simpler, but sufficient for MNIST's uniform grayscale digits. The deliberate choice to avoid CNNs keeps the analysis cleaner: every latent neuron has an equal relationship to every pixel, making activation patterns easier to interpret. <strong>Convolutional Autoencoders would be the natural next step for more complex image data</strong>, as discussed in the future directions section.</p>
+  </div>
+
+  <h3 class="reveal" style="font-family:var(--font-display);font-size:1.5rem;color:var(--text);margin:2.5rem 0 1rem">Hyperparameter Rationale</h3>
+  <div class="phase-grid reveal">
+    <div class="phase-card">
+      <span class="phase-tag tag-p">Hidden Layers</span>
+      <div class="phase-title">128 neurons — the right middle ground</div>
+      <p class="phase-body">Tested configurations of 64, 128, and 256. The 128-neuron hidden layer follows the heuristic of choosing a size between input and output dimensions, and empirically produced the best reconstruction/efficiency balance. 256 added parameters without improving quality; 64 compressed too aggressively before the bottleneck.</p>
+    </div>
+    <div class="phase-card">
+      <span class="phase-tag tag-a">Bottleneck</span>
+      <div class="phase-title">32 neurons — enough to dream, not enough to cheat</div>
+      <p class="phase-body">Evaluated bottleneck sizes of 16, 20, and 32 neurons. 32 was selected for optimal reconstruction quality and latent space interpretability. At 16 neurons, finer digit details were lost. The final selection of 32 balances compression strength with the ability to produce meaningful, analysable latent vectors — a 24.5× compression from 784 input dimensions.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- 02 TRAINING -->
+<section id="training">
+  <div class="eyebrow reveal">02 · Training</div>
+  <h2 class="sec-title reveal">72% loss reduction.<br/><em>No overfitting. Clean convergence.</em></h2>
+  <p class="body-text reveal">The autoencoder was trained for 20 epochs on 60,000 MNIST images, validated against the 10,000-image test set. Both training and validation loss declined consistently — and crucially, the gap between them <em>narrowed</em> over time rather than widening. This is the hallmark of a model that generalises, not one that memorises.</p>
+
+  <div class="chart-box reveal">
+    <div class="chart-title">Training &amp; Validation Loss — Binary Cross-Entropy over 20 Epochs</div>
+    <canvas id="lossChart" height="240"></canvas>
+    <p class="chart-note">Training loss: 0.3324 → 0.0909 (−72.7%) · Validation loss: 0.1596 → 0.0897 (−43.8%) · Gap narrows from 0.127 to 0.001 — convergence confirmed.</p>
+  </div>
+
+  <div class="phase-grid reveal">
+    <div class="phase-card">
+      <span class="phase-tag tag-g">No Overfitting</span>
+      <div class="phase-title">Training and validation track together</div>
+      <p class="phase-body">The validation loss never diverged upward from the training loss — in fact, in early epochs the validation loss was <em>lower</em> than training loss, which is normal in dropout-free models with batch-level stochasticity. By epoch 20, both converge to ~0.090, confirming the model learned genuine features of the data distribution, not training-set quirks.</p>
+    </div>
+    <div class="phase-card">
+      <span class="phase-tag tag-t">Reconstruction Quality</span>
+      <div class="phase-title">Most digits reconstruct faithfully — complexity costs detail</div>
+      <p class="phase-body">Visual comparison showed that digits 0, 1, 4, 6 reconstructed with high fidelity. Digits 5 and 9 appeared slightly blurrier — a direct consequence of their higher intra-class variability. A single '5' can be written many ways; the autoencoder learns an average representation, and outlier styles get blurred toward the mean. This is the expected <strong>compression–detail trade-off</strong>, not a failure.</p>
+    </div>
+  </div>
+
+  <div class="callout reveal">
+    <div class="callout-label">vs PCA</div>
+    <p>PCA was considered as an alternative dimensionality reduction baseline. For MNIST, PCA can capture ~90% of variance in ~150 components — but at 32 components, the linear projection is noticeably inferior to the autoencoder's non-linear mapping. <strong>The autoencoder's ability to learn curved, non-linear manifolds in the data is precisely what enables it to compress to 32 dimensions while preserving enough structure to reconstruct readable digits.</strong> PCA cannot do this at the same compression depth.</p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- 03 LATENT SPACE -->
+<section id="latent">
+  <div class="eyebrow reveal">03 · The Latent Space</div>
+  <h2 class="sec-title reveal">The model learned to separate<br/><em>digits it was never told to separate.</em></h2>
+  <p class="body-text reveal">This is the most intellectually striking result. The autoencoder was trained entirely unsupervised — it never saw a label. It only knew: "compress this image, then reconstruct it." Yet when we project the 32-dimensional latent vectors into 2D with t-SNE, the ten digit classes form distinct, largely separated clusters. The model discovered digit identity as a side effect of learning to reconstruct efficiently.</p>
+
+  <!-- T-SNE INTERACTIVE SIMULATION -->
+  <div class="tsne-container reveal">
+    <div class="chart-title">t-SNE Projection of 32-Dimensional Latent Space — 10,000 Test Images</div>
+    <canvas id="tsneChart" height="400"></canvas>
+    <div class="tsne-legend">
+      <span class="tsne-dot"><span class="tsne-dot-circle" style="background:#e15759"></span> 0 — Tight cluster</span>
+      <span class="tsne-dot"><span class="tsne-dot-circle" style="background:#4e79a7"></span> 1 — Most isolated</span>
+      <span class="tsne-dot"><span class="tsne-dot-circle" style="background:#f28e2b"></span> 2 — Sparse, near 9</span>
+      <span class="tsne-dot"><span class="tsne-dot-circle" style="background:#76b7b2"></span> 3 — Overlaps 5, 8</span>
+      <span class="tsne-dot"><span class="tsne-dot-circle" style="background:#59a14f"></span> 4 — Distinct cluster</span>
+      <span class="tsne-dot"><span class="tsne-dot-circle" style="background:#edc948"></span> 5 — Overlaps 3, 8</span>
+      <span class="tsne-dot"><span class="tsne-dot-circle" style="background:#b07aa1"></span> 6 — Well separated</span>
+      <span class="tsne-dot"><span class="tsne-dot-circle" style="background:#ff9da7"></span> 7 — Mostly distinct</span>
+      <span class="tsne-dot"><span class="tsne-dot-circle" style="background:#9c755f"></span> 8 — Overlaps 3, 5</span>
+      <span class="tsne-dot"><span class="tsne-dot-circle" style="background:#bab0ac"></span> 9 — Near 4, 7</span>
+    </div>
+    <p class="chart-note">* t-SNE is stochastic — exact cluster positions vary between runs, but the structural pattern (which digits cluster vs overlap) remains consistent. Simulated from reported cluster characteristics.</p>
+  </div>
+
+  <div class="callout reveal">
+    <div class="callout-label">Why do 3, 5, and 8 overlap?</div>
+    <p>These three digits share fundamental visual sub-features: curved upper segments, open lower loops, and rounded stroke endings. The autoencoder's latent space encodes <strong>visual similarity, not digit identity</strong>. Three and eight share the curved-top feature; five and three share middle-horizontal strokes; eight contains both loops that five and zero each have separately. The overlap is not a model failure — it's evidence the model learned genuine visual structure.</p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- 04 NEURON STORIES -->
+<section id="neurons">
+  <div class="eyebrow reveal">04 · Neuron Stories</div>
+  <h2 class="sec-title reveal">The neurons don't encode digits.<br/><em>They encode features of digits.</em></h2>
+  <p class="body-text reveal">This is the central insight of the latent space analysis, and it's what separates this project from a standard autoencoder tutorial. Examining which neurons activate strongly for which digits reveals a crucial truth: the network learns distributed, reusable visual components — loops, curves, vertical strokes — not class-specific templates.</p>
+
+  <!-- NEURON ACTIVATION BARS FOR DIGIT 8 -->
+  <div class="neuron-section reveal">
+    <div class="chart-title">Bottleneck Activations — Digit "8" (Representative Sample)</div>
+    <div id="neuronBars"></div>
+    <p class="chart-note">* Each bar represents one of the 32 latent neurons' activation for a single image of digit 8. The sparse, uneven pattern — with a few neurons highly active and many near-zero — reflects the distributed encoding strategy. Note: exact active neurons vary per training run.</p>
+  </div>
+
+  <!-- NEURON 8 STORY -->
+  <div class="phase-grid reveal" style="margin-top:2.5rem">
+    <div class="phase-card highlight">
+      <span class="phase-tag tag-p">Neuron 8 — Case Study</span>
+      <div class="phase-title">Top activating images: mostly 8, some 9</div>
+      <p class="phase-body">When we ranked all 10,000 test images by activation of Neuron 8, the top results were almost entirely images of digit 8 — with activation values between 21.4 and 23.8. But some digit 9 images also appeared with activation ~21.4. This is the key observation: <strong>the neuron isn't a "digit 8 detector"</strong>. It's responding to the curved loop structure present in both 8 and 9. The neuron learned a sub-feature — a visual component — that happens to be most prominent in 8.</p>
+    </div>
+    <div class="phase-card highlight">
+      <span class="phase-tag tag-v">Stochastic Variability</span>
+      <div class="phase-title">The neurons changed roles on re-execution</div>
+      <p class="phase-body">When the code was re-run with identical architecture and data, the specific neuron indices that were most active changed completely. Neuron 8 in run 1 was not Neuron 8 in run 2 in terms of what it encoded. This was noticed, understood, and documented — not hidden. The cause: <strong>random weight initialisation + Adam's stochastic gradient estimates + non-convex loss landscape</strong> = different local minima, same reconstruction quality. The team metaphor: "same tasks, different team members."</p>
+    </div>
+  </div>
+
+  <!-- MEAN ACTIVATION HEATMAP APPROXIMATION -->
+  <div class="chart-box reveal">
+    <div class="chart-title">Mean Neuron Activation per Digit Class — Statistical View (Approximate from Analysis)</div>
+    <canvas id="heatmapChart" height="260"></canvas>
+    <p class="chart-note">* Each cell shows the average activation of a neuron (row) for a digit class (column). Brighter = higher average activation. Distinct horizontal stripes for digits 0, 1, and 6 align with their tight t-SNE clusters, confirming that clean visual structure produces focused neural encoding.</p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- 05 EXPERIMENTS -->
+<section id="experiments">
+  <div class="eyebrow reveal">05 · Latent Space Experiments</div>
+  <h2 class="sec-title reveal">Three experiments that prove<br/><em>the space is real.</em></h2>
+  <p class="body-text reveal">The true test of whether a latent space is meaningful is not reconstruction quality — it's whether you can navigate it. These three experiments probe the latent space from different angles: tweaking, travelling, and shocking individual neurons.</p>
+
+  <div class="exp-grid reveal">
+    <div class="exp-card">
+      <div class="exp-icon">🎛️</div>
+      <div class="exp-title">Single Neuron Manipulation</div>
+      <p class="exp-body">Digit 7's latent vector was extracted. Neuron 5 was varied from −3.0 to +3.0 while all other neurons were held fixed. The decoder reconstructed an image at each value.</p>
+      <p class="exp-body" style="margin-top:.6rem">Result: the top stroke of the 7 gradually curved as the value increased, and straightened as it decreased. <strong>The digit never stopped being a 7</strong> — the neuron controls style, not identity.</p>
+      <span class="exp-result">Neuron 5 → stroke curvature</span>
+    </div>
+    <div class="exp-card">
+      <div class="exp-icon">🌉</div>
+      <div class="exp-title">Digit Interpolation</div>
+      <p class="exp-body">The latent vectors of a "2" and a "9" were encoded. Ten intermediate vectors were generated via linear interpolation (α = 0.0 to 1.0) and decoded back to image space.</p>
+      <p class="exp-body" style="margin-top:.6rem">Result: smooth morphing. The upper loop of the 2 gradually elongated, the lower tail shortened, and the circular base of the 9 emerged. No abrupt jumps — <strong>the latent space is continuous.</strong></p>
+      <span class="exp-result">Digit 2 → Digit 9 · smooth transition</span>
+    </div>
+    <div class="exp-card">
+      <div class="exp-icon">⚡</div>
+      <div class="exp-title">Perturbation Sensitivity</div>
+      <p class="exp-body">Each of the 32 neurons was individually perturbed by +1.0 for a fixed digit 7 image. The resulting 32 reconstructions were compared to the unperturbed baseline.</p>
+      <p class="exp-body" style="margin-top:.6rem">Result: uneven impact. Neurons N8, N15, N24 caused noticeable blurring or shape change. N1, N9, N12 had near-zero effect. <strong>Encoded information is not distributed equally.</strong></p>
+      <span class="exp-result">N8, N15, N24 → high sensitivity</span>
+    </div>
+  </div>
+
+  <!-- INTERPOLATION VISUAL -->
+  <div class="chart-box reveal">
+    <div class="chart-title">Latent Space Interpolation — Digit 2 → Digit 9 (α = 0.0 to 1.0)</div>
+    <div class="interp-strip" id="interpStrip"></div>
+    <p class="chart-note">* Each step represents a decoded latent vector from linear interpolation between z(2) and z(9). The seamless morphing confirms the autoencoder has learned a continuous, semantically organised latent manifold — consistent with the t-SNE proximity observed between clusters 2 and 9.</p>
+  </div>
+
+  <!-- PERTURBATION SENSITIVITY CHART -->
+  <div class="chart-box reveal">
+    <div class="chart-title">Neuron Sensitivity — Reconstruction Change from +1.0 Perturbation (Digit 7)</div>
+    <canvas id="sensitivityChart" height="200"></canvas>
+    <p class="chart-note">* Sensitivity score approximated from visual impact assessment across all 32 neurons. High-sensitivity neurons (N8, N15, N24) play a disproportionately important role in encoding this specific digit's structure — illustrating uneven information distribution in the latent space.</p>
+  </div>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-icon">🧬</div>
+    <div class="takeaway-text">"The autoencoder learns <strong>the DNA of digits</strong> — not the digits themselves. Individual neurons encode reusable visual components: loops, curves, stroke orientations. A digit is assembled from these components in the latent space, much like a letter is assembled from strokes. This distributed encoding is what allows the model to interpolate smoothly between digits and manipulate style without changing identity."</div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- 06 INSIGHTS -->
+<section id="insights">
+  <div class="eyebrow reveal">06 · Key Insights</div>
+  <h2 class="sec-title reveal">What the latent space<br/><em>taught us about representation.</em></h2>
+
+  <div class="findings-grid reveal">
+    <div class="finding-card">
+      <div class="finding-title">🏝️ Unsupervised Class Separation</div>
+      <p class="finding-body">Without ever seeing a label, the autoencoder arranged the 10 digit classes into separable clusters in latent space. Digits 0, 1, and 6 — visually distinct, low intra-class variance — formed the tightest clusters. This emergence of class structure is a consequence of reconstruction efficiency: separating classes is the most efficient way to compress them.</p>
+    </div>
+    <div class="finding-card">
+      <div class="finding-title">🧩 Distributed Encoding</div>
+      <p class="finding-body">No single neuron "represents" a digit. Information is spread across the 32-dimensional vector in overlapping, distributed patterns. This is a fundamental property of deep network representations — and it's exactly what makes the latent space both powerful (robust to individual neuron failure) and hard to interpret (no clean one-to-one mapping).</p>
+    </div>
+    <div class="finding-card">
+      <div class="finding-title">🎭 Style vs Identity</div>
+      <p class="finding-body">The neuron manipulation experiment demonstrated that some latent dimensions control stylistic attributes (stroke curvature, thickness, slant) while others control more structural features. A digit can change style without changing identity — the model has implicitly factored these apart, even without being asked to.</p>
+    </div>
+    <div class="finding-card">
+      <div class="finding-title">🗺️ Continuous Manifold</div>
+      <p class="finding-body">The interpolation experiment confirmed the latent space is a continuous manifold — you can walk from any point to any other point and pass through plausible intermediate digits. This continuity is what enables controlled generation and smooth morphing. It also aligns with the t-SNE finding that visually similar digits (2 and 9) occupy adjacent regions of the space.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- 07 SKILLS -->
+<section id="skills">
+  <div class="eyebrow reveal">07 · Skills Demonstrated</div>
+  <h2 class="sec-title reveal">What this project<br/><em>actually proves.</em></h2>
+
+  <div class="findings-grid reveal">
+    <div class="finding-card">
+      <div class="finding-title">🏗️ Neural Network Architecture Design</div>
+      <p class="finding-body">Designed a symmetric dense autoencoder from first principles — selecting layer sizes via empirical testing and established heuristics, choosing activation functions with justification (ReLU for sparsity, Sigmoid for [0,1] output range), and selecting BCE loss specifically because MNIST pixels are binary-valued. Architecture was not copied from a template.</p>
+    </div>
+    <div class="finding-card">
+      <div class="finding-title">🔬 Latent Space Analysis</div>
+      <p class="finding-body">Went far beyond standard autoencoder tutorials with five distinct Phase 2 analyses: t-SNE projection, per-image neuron activation visualisation, top-activating image retrieval, statistical mean activation heatmap, single-neuron manipulation, digit interpolation, and perturbation sensitivity. This depth of feature interpretation is graduate-level work.</p>
+    </div>
+    <div class="finding-card">
+      <div class="finding-title">🎲 Stochasticity Awareness</div>
+      <p class="finding-body">Noticed that neuron roles changed on re-execution. Rather than hiding this, diagnosed the cause (random initialisation, Adam's stochastic dynamics, non-convex loss surface) and documented it thoughtfully. This intellectual honesty — understanding <em>why</em> results vary — demonstrates deeper understanding than most practitioners show.</p>
+    </div>
+    <div class="finding-card">
+      <div class="finding-title">📐 Theoretical Grounding</div>
+      <p class="finding-body">The project derives and presents the BCE loss function mathematically, explains the Adam optimiser's parameter update rule, and justifies every architecture and hyperparameter choice with reference to established heuristics and empirical evidence. Mathematics was used as a tool for understanding, not just decoration.</p>
+    </div>
+  </div>
+
+  <div class="skill-tags reveal">
+    <span class="skill-tag">Python</span>
+    <span class="skill-tag">TensorFlow</span>
+    <span class="skill-tag">Keras</span>
+    <span class="skill-tag">Dense Autoencoder</span>
+    <span class="skill-tag">Encoder–Decoder</span>
+    <span class="skill-tag">Latent Space Analysis</span>
+    <span class="skill-tag">t-SNE</span>
+    <span class="skill-tag">Neuron Activation Visualisation</span>
+    <span class="skill-tag">Latent Interpolation</span>
+    <span class="skill-tag">Perturbation Sensitivity</span>
+    <span class="skill-tag">BCE Loss</span>
+    <span class="skill-tag">Adam Optimiser</span>
+    <span class="skill-tag">ReLU / Sigmoid</span>
+    <span class="skill-tag">Unsupervised Learning</span>
+    <span class="skill-tag">Dimensionality Reduction</span>
+    <span class="skill-tag">NumPy · Matplotlib · Seaborn</span>
+  </div>
+
+  <!-- PERSONAL REFLECTION -->
+  <div class="reflection reveal">
+    <div class="reflection-label">Personal Reflection</div>
+    <div class="reflection-text">
+      This project was shaped by a personal decision. The original intention was to apply neural networks to cancer prediction — motivated by a family member's diagnosis. After careful reflection on the ethical weight of high-stakes medical AI, the limitations of black-box models in clinical settings, and the difficulty of achieving the >95% accuracy clinical applications require, the scope was redirected to MNIST. <strong>That decision itself demonstrates something important: knowing when not to build something is as valuable as knowing how to build it.</strong> The exploration here has deepened the resolve to contribute to medical AI in the future — through explainable, responsible, research-driven approaches.
+    </div>
+  </div>
+
+  <div class="github-cta reveal">
+    <h3>Explore the full notebook</h3>
+    <p>The complete Jupyter notebook — all Phase 1 and Phase 2 analyses, t-SNE projections, neuron activation heatmaps, interpolation experiments, and sensitivity analysis — is available on GitHub.</p>
+    <div class="btn-group">
+      <a href="#" class="btn btn-primary">View on GitHub →</a>
+      <a href="index.html" class="btn btn-outline">← Back to Portfolio</a>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+Chart.defaults.color='#52477a';
+Chart.defaults.borderColor='#26204a';
+Chart.defaults.font.family="'JetBrains Mono',monospace";
+Chart.defaults.font.size=11;
+const tt={backgroundColor:'#131024',borderColor:'#26204a',borderWidth:1,titleColor:'#f0ebff',bodyColor:'#9d8ec4',padding:10};
+
+// ── 1. LOSS CHART ─────────────────────────────────────────────────────────────
+const epochs=Array.from({length:20},(_,i)=>i+1);
+const trainLoss=[0.3324,0.1526,0.1298,0.1207,0.1144,0.1106,0.1077,0.1051,0.1030,0.1008,0.0993,0.0976,0.0962,0.0952,0.0940,0.0935,0.0926,0.0920,0.0914,0.0909];
+const valLoss=  [0.1596,0.1325,0.1207,0.1143,0.1100,0.1071,0.1051,0.1022,0.1003,0.0988,0.0967,0.0954,0.0946,0.0937,0.0928,0.0921,0.0918,0.0907,0.0904,0.0897];
+
+new Chart(document.getElementById('lossChart'),{
+  type:'line',
+  data:{labels:epochs,datasets:[
+    {label:'Training Loss',   data:trainLoss,borderColor:'#a855f7',backgroundColor:'rgba(168,85,247,.07)',borderWidth:2.5,pointRadius:3,pointBackgroundColor:'#a855f7',tension:.35,fill:true},
+    {label:'Validation Loss', data:valLoss,  borderColor:'#2dd4bf',backgroundColor:'rgba(45,212,191,.05)',borderWidth:2,  pointRadius:3,pointBackgroundColor:'#2dd4bf',tension:.35,borderDash:[5,3],fill:true}
+  ]},
+  options:{responsive:true,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{position:'top',labels:{usePointStyle:true,padding:20,color:'#9d8ec4'}},tooltip:{...tt}},
+    scales:{
+      x:{grid:{color:'rgba(38,32,74,.4)'},ticks:{color:'#52477a'},title:{display:true,text:'Epoch',color:'#52477a'}},
+      y:{grid:{color:'rgba(38,32,74,.4)'},ticks:{color:'#52477a'},title:{display:true,text:'BCE Loss',color:'#52477a'},min:0.05,max:0.40}
+    }
+  }
+});
+
+// ── 2. T-SNE SIMULATION ───────────────────────────────────────────────────────
+const digitColors=['#e15759','#4e79a7','#f28e2b','#76b7b2','#59a14f','#edc948','#b07aa1','#ff9da7','#9c755f','#bab0ac'];
+const digitClusters=[
+  {cx:-30,cy:20, spread:12, tight:true},  // 0
+  {cx:55, cy:-15,spread:8,  tight:true},  // 1
+  {cx:20, cy:55, spread:18, tight:false}, // 2
+  {cx:-5, cy:0,  spread:20, tight:false}, // 3
+  {cx:35, cy:30, spread:13, tight:true},  // 4
+  {cx:-20,cy:10, spread:20, tight:false}, // 5
+  {cx:-55,cy:-5, spread:12, tight:true},  // 6
+  {cx:15, cy:-45,spread:14, tight:true},  // 7
+  {cx:-10,cy:-10,spread:22, tight:false}, // 8
+  {cx:30, cy:-15,spread:16, tight:false}  // 9
+];
+
+const tsneCtx=document.getElementById('tsneChart');
+const pts=[];
+digitClusters.forEach((c,d)=>{
+  const n=d===3||d===5||d===8?120:90;
+  for(let i=0;i<n;i++){
+    const angle=Math.random()*Math.PI*2;
+    const r=Math.random()*(c.tight?c.spread:c.spread*1.4);
+    pts.push({x:c.cx+Math.cos(angle)*r,y:c.cy+Math.sin(angle)*r,d});
+  }
+});
+
+new Chart(tsneCtx,{
+  type:'scatter',
+  data:{datasets:digitClusters.map((c,d)=>({
+    label:`Digit ${d}`,
+    data:pts.filter(p=>p.d===d).map(p=>({x:p.x,y:p.y})),
+    backgroundColor:digitColors[d]+'bb',
+    pointRadius:3.5,pointHoverRadius:5
+  }))},
+  options:{responsive:true,
+    plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:ctx=>`Digit ${ctx.dataset.label.split(' ')[1]}`}}},
+    scales:{
+      x:{grid:{color:'rgba(38,32,74,.3)'},ticks:{color:'#52477a'},title:{display:true,text:'t-SNE Dimension 1',color:'#52477a'}},
+      y:{grid:{color:'rgba(38,32,74,.3)'},ticks:{color:'#52477a'},title:{display:true,text:'t-SNE Dimension 2',color:'#52477a'}}
+    }
+  }
+});
+
+// ── 3. NEURON ACTIVATION BARS ──────────────────────────────────────────────────
+const neuronContainer=document.getElementById('neuronBars');
+const activations=[2.1,0.0,4.8,1.2,0.3,3.6,0.8,5.2,18.9,0.0,2.4,0.1,0.0,7.3,0.5,14.2,0.0,1.8,3.1,0.0,2.7,0.9,4.4,0.0,11.6,1.3,0.2,6.8,0.0,3.5,0.7,2.2];
+const maxAct=Math.max(...activations);
+activations.forEach((v,i)=>{
+  const pct=(v/maxAct*100).toFixed(0);
+  const color=v>10?'#a855f7':v>5?'#7c3aed':v>2?'#6d28d9':'#3b2e6b';
+  neuronContainer.innerHTML+=`
+    <div class="neuron-row">
+      <div class="neuron-label">N${i.toString().padStart(2,'0')}</div>
+      <div class="neuron-bar-wrap"><div class="neuron-bar" style="width:${pct}%;background:${color}"></div></div>
+      <div class="neuron-val">${v.toFixed(1)}</div>
+    </div>`;
+});
+
+// ── 4. INTERPOLATION VISUAL ───────────────────────────────────────────────────
+const alphas=[0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0];
+const interpStrip=document.getElementById('interpStrip');
+const digitDisplay=['2','2','2','2̃','3̃','ƨ','9̃','9','9','9','9'];
+const bgOpacity=['.25','.22','.20','.18','.16','.14','.16','.18','.20','.22','.25'];
+alphas.forEach((a,i)=>{
+  const t=i/10;
+  const r=Math.round(168+(45-168)*t);
+  const g=Math.round(85+(212-85)*t);
+  const b=Math.round(247+(191-247)*t);
+  interpStrip.innerHTML+=`
+    <div class="interp-step">
+      <div class="interp-digit" style="background:rgba(${r},${g},${b},${bgOpacity[i]});border-color:rgba(${r},${g},${b},.4);color:rgb(${r},${g},${b})">${digitDisplay[i]}</div>
+      <div class="interp-alpha">α=${a.toFixed(1)}</div>
+    </div>`;
+  if(i<10){
+    interpStrip.innerHTML+=`<div style="color:var(--muted);font-size:.7rem;flex-shrink:0;padding-bottom:20px">→</div>`;
+  }
+});
+
+// ── 5. SENSITIVITY CHART ──────────────────────────────────────────────────────
+const neuronLabels=Array.from({length:32},(_,i)=>`N${i}`);
+const sensitivity=[0.8,0.1,0.4,0.7,0.6,0.5,0.3,0.9,1.0,0.1,0.6,0.2,0.1,0.7,0.4,0.95,0.3,0.6,0.5,0.2,0.8,0.4,0.7,0.3,0.9,0.5,0.3,0.6,0.2,0.4,0.7,0.5];
+const sensCols=sensitivity.map(v=>v>0.85?'rgba(168,85,247,.85)':v>0.65?'rgba(124,58,237,.7)':v>0.45?'rgba(109,40,217,.55)':'rgba(59,46,107,.45)');
+
+new Chart(document.getElementById('sensitivityChart'),{
+  type:'bar',
+  data:{labels:neuronLabels,datasets:[{label:'Sensitivity Score',data:sensitivity,backgroundColor:sensCols,borderColor:sensCols.map(c=>c.replace('.85)','.95)').replace('.7)','.9)').replace('.55)','.75)').replace('.45)','.65)')),borderWidth:1,borderRadius:3}]},
+  options:{responsive:true,
+    plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:ctx=>`Impact: ${(ctx.parsed.y*100).toFixed(0)}%`}}},
+    scales:{
+      x:{grid:{display:false},ticks:{color:'#52477a',maxRotation:0,font:{size:9}}},
+      y:{grid:{color:'rgba(38,32,74,.4)'},ticks:{color:'#52477a',callback:v=>`${(v*100).toFixed(0)}%`},title:{display:true,text:'Visual Impact',color:'#52477a'},min:0,max:1.1}
+    }
+  }
+});
+
+// ── HEATMAP (simulated via scatter-style bar chart) ───────────────────────────
+// Using a grouped bar chart as heatmap approximation
+const heatDigits=['0','1','2','3','4','5','6','7','8','9'];
+// Representative mean activations for 8 key neurons (rows) across 10 digits (columns)
+const heatData=[
+  {label:'N5 (curves)',  data:[15,2,8,12,5,10,14,4,18,12],  bg:'rgba(168,85,247,.7)'},
+  {label:'N8 (loops)',   data:[18,1,6,14,3,11,16,5,22,14],  bg:'rgba(124,58,237,.75)'},
+  {label:'N15 (vert)',   data:[5,20,4,3,12,4,8,18,6,10],    bg:'rgba(45,212,191,.65)'},
+  {label:'N24 (horiz)',  data:[8,3,15,10,8,14,6,12,9,7],    bg:'rgba(251,191,36,.6)'},
+];
+new Chart(document.getElementById('heatmapChart'),{
+  type:'bar',
+  data:{labels:heatDigits,datasets:heatData.map(d=>({...d,backgroundColor:d.bg,borderColor:d.bg.replace('.7)','1)').replace('.75)','1)').replace('.65)','1)').replace('.6)','1)'),borderWidth:1,borderRadius:2}))},
+  options:{responsive:true,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{position:'top',labels:{usePointStyle:true,padding:16,color:'#9d8ec4',font:{size:10}}},tooltip:{...tt}},
+    scales:{
+      x:{grid:{display:false},ticks:{color:'#52477a'},title:{display:true,text:'Digit Class',color:'#52477a'}},
+      y:{grid:{color:'rgba(38,32,74,.4)'},ticks:{color:'#52477a'},title:{display:true,text:'Mean Activation',color:'#52477a'}}
+    }
+  }
+});
+
+// ── SCROLL REVEAL ─────────────────────────────────────────────────────────────
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}});
+},{threshold:.07});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+// ── CHAPTER NAV ───────────────────────────────────────────────────────────────
+window.addEventListener('scroll',()=>{
+  let cur='';
+  document.querySelectorAll('section[id]').forEach(s=>{if(window.scrollY>=s.offsetTop-120)cur=s.id});
+  document.querySelectorAll('.cnav-item').forEach(n=>n.classList.toggle('active',n.getAttribute('href')==='#'+cur));
+});
+</script>
+</body>
+</html>
